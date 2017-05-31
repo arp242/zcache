@@ -27,6 +27,7 @@ included; in short:
 - Add `Keys()` to list all keys
 - Add `Touch()` to update the expiry on an item.
 - Add `GetStale()` to get items even after they've expired.
+- Add `Pop()` to update the expiry on an item.
 
 
 Usage
@@ -34,61 +35,61 @@ Usage
 
 ```go
 import (
-	"fmt"
-	"time"
+    "fmt"
+    "time"
 
-	"zgo.at/zcache"
+    "zgo.at/zcache"
 )
 
 func main() {
-	// Create a cache with a default expiration time of 5 minutes, and which
-	// purges expired items every 10 minutes
-	c := zcache.New(5*time.Minute, 10*time.Minute)
+    // Create a cache with a default expiration time of 5 minutes, and which
+    // purges expired items every 10 minutes
+    c := zcache.New(5*time.Minute, 10*time.Minute)
 
-	// Set the value of the key "foo" to "bar", with the default expiration time
-	c.Set("foo", "bar", zcache.DefaultExpiration)
+    // Set the value of the key "foo" to "bar", with the default expiration time
+    c.Set("foo", "bar", zcache.DefaultExpiration)
 
-	// Set the value of the key "baz" to 42, with no expiration time
-	// (the item won't be removed until it is re-set, or removed using
-	// c.Delete("baz")
-	c.Set("baz", 42, zcache.NoExpiration)
+    // Set the value of the key "baz" to 42, with no expiration time
+    // (the item won't be removed until it is re-set, or removed using
+    // c.Delete("baz")
+    c.Set("baz", 42, zcache.NoExpiration)
 
-	// Get the string associated with the key "foo" from the cache
-	foo, found := c.Get("foo")
-	if found {
-		fmt.Println(foo)
-	}
+    // Get the string associated with the key "foo" from the cache
+    foo, ok := c.Get("foo")
+    if ok {
+        fmt.Println(foo)
+    }
 
-	// Since Go is statically typed, and cache values can be anything, type
-	// assertion is needed when values are being passed to functions that don't
-	// take arbitrary types, (i.e. interface{}). The simplest way to do this for
-	// values which will only be used once--e.g. for passing to another
-	// function--is:
-	foo, found := c.Get("foo")
-	if found {
-		MyFunction(foo.(string))
-	}
+    // Since Go is statically typed, and cache values can be anything, type
+    // assertion is needed when values are being passed to functions that don't
+    // take arbitrary types, (i.e. interface{}). The simplest way to do this for
+    // values which will only be used once--e.g. for passing to another
+    // function--is:
+    foo, ok := c.Get("foo")
+    if ok {
+        MyFunction(foo.(string))
+    }
 
-	// This gets tedious if the value is used several times in the same function.
-	// You might do either of the following instead:
-	if x, found := c.Get("foo"); found {
-		foo := x.(string)
-		// ...
-	}
-	// or
-	var foo string
-	if x, found := c.Get("foo"); found {
-		foo = x.(string)
-	}
-	// ...
-	// foo can then be passed around freely as a string
+    // This gets tedious if the value is used several times in the same function.
+    // You might do either of the following instead:
+    if x, ok := c.Get("foo"); ok {
+        foo := x.(string)
+        // ...
+    }
+    // or
+    var foo string
+    if x, ok := c.Get("foo"); ok {
+        foo = x.(string)
+    }
+    // ...
+    // foo can then be passed around freely as a string
 
-	// Want performance? Store pointers!
-	c.Set("foo", &MyStruct, zcache.DefaultExpiration)
-	if x, found := c.Get("foo"); found {
-		foo := x.(*MyStruct)
-			// ...
-	}
+    // Want performance? Store pointers!
+    c.Set("foo", &MyStruct, zcache.DefaultExpiration)
+    if x, ok := c.Get("foo"); ok {
+        foo := x.(*MyStruct)
+        // ...
+    }
 }
 ```
 

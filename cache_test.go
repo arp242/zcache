@@ -580,6 +580,58 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+type onEvictTest struct {
+	sync.Mutex
+	items []struct {
+		k string
+		v interface{}
+	}
+}
+
+func (o *onEvictTest) add(k string, v interface{}) {
+	if k == "race" {
+		return
+	}
+	o.Lock()
+	o.items = append(o.items, struct {
+		k string
+		v interface{}
+	}{k, v})
+	o.Unlock()
+}
+
+func TestPop(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+
+	var onEvict onEvictTest
+	tc.OnEvicted(onEvict.add)
+
+	raceTest(tc, func() {
+		tc.Set("foo", "val", DefaultExpiration)
+
+		v, ok := tc.Pop("foo")
+		wantKeys(t, tc, []string{}, []string{"foo"})
+		if !ok {
+			t.Error("ok is false")
+		}
+		if v.(string) != "val" {
+			t.Errorf("wrong value: %v", v)
+		}
+
+		v, ok = tc.Pop("nonexistent")
+		if ok {
+			t.Error("ok is true")
+		}
+		if v != nil {
+			t.Errorf("v is not nil")
+		}
+	})
+
+	if fmt.Sprintf("%v", onEvict.items) != `[{foo val}]` {
+		t.Errorf("onEvicted: %v", onEvict.items)
+	}
+}
+
 func TestItems(t *testing.T) {
 	tc := New(DefaultExpiration, 1*time.Millisecond)
 	raceTest(tc, func() {

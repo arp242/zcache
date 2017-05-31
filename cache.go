@@ -315,6 +315,30 @@ func (c *cache) Delete(k string) {
 	}
 }
 
+// Pop gets an item from the cache and deletes it.
+func (c *cache) Pop(k string) (interface{}, bool) {
+	c.mu.Lock()
+
+	// "Inlining" of get and Expired
+	item, ok := c.items[k]
+	if !ok {
+		c.mu.Unlock()
+		return nil, false
+	}
+	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+		c.mu.Unlock()
+		return nil, false
+	}
+
+	v, evicted := c.delete(k)
+	c.mu.Unlock()
+	if evicted {
+		c.onEvicted(k, v)
+	}
+
+	return item.Object, true
+}
+
 func (c *cache) delete(k string) (interface{}, bool) {
 	if c.onEvicted != nil {
 		if v, ok := c.items[k]; ok {

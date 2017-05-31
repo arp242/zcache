@@ -14,8 +14,10 @@ or issue that was reported should be resolved.
   https://github.com/patrickmn/go-cache/pull/96
   https://github.com/patrickmn/go-cache/pull/126
   https://github.com/patrickmn/go-cache/issues/65
+  https://github.com/patrickmn/go-cache/pull/55
 
-  Added as `Touch()`
+  Added as `Touch()`; PR 55 also added `Pop()`, which seems like a useful thing
+  to add as well.
 
 - https://github.com/patrickmn/go-cache/pull/47
   https://github.com/patrickmn/go-cache/pull/53
@@ -56,21 +58,9 @@ or issue that was reported should be resolved.
        // Do stuff while it's locked.
   })
 
-- TODO
-  https://github.com/patrickmn/go-cache/pull/55
+- https://github.com/patrickmn/go-cache/pull/77
 
-  Some of this looks useful.
-
-  One way to do this would be to add a list of options in an (incompatible) API,
-  would also solve integrate some of the other this:
-
-      c.Get("key", zcache.Pop, z.cacheIncludeExpired) // Or as bitmask?
-
-- TODO
-  https://github.com/patrickmn/go-cache/pull/77
-
-  Remove item and return value; don't like the function name but could include
-  this.
+  Added as Pop()
 
 - TODO
   https://github.com/patrickmn/go-cache/pull/97
