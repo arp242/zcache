@@ -17,12 +17,12 @@ func (c *cache) {{if .Inc}}Increment{{else}}Decrement{{end}}{{.U}}(k string, n {
 	v, found := c.items[k]
 	if !found || v.Expired() {
 		c.mu.Unlock()
-		return 0, fmt.Errorf("Item %s not found", k)
+		return 0, errors.New("zcache.{{if .Inc}}Increment{{else}}Decrement{{end}}: item" + k + " not found")
 	}
 	rv, ok := v.Object.({{.T}})
 	if !ok {
 		c.mu.Unlock()
-		return 0, fmt.Errorf("The value for %s is not an {{.T}}", k)
+		return 0, errors.New("the value for " + k + " is not an {{.T}}")
 	}
 	nv := rv {{if .Inc}}+{{else}}-{{end}} n
 	v.Object = nv
@@ -43,7 +43,7 @@ func (c *cache) {{if .Inc}}Increment{{else}}Decrement{{end}}Float(k string, n fl
 	v, found := c.items[k]
 	if !found || v.Expired() {
 		c.mu.Unlock()
-		return fmt.Errorf("Item %s not found", k)
+		return errors.New("zcache.{{if .Inc}}Increment{{else}}Decrement{{end}}Float: item " + k + " not found")
 	}
 	switch v.Object.(type) {
 	case float32:
@@ -52,7 +52,7 @@ func (c *cache) {{if .Inc}}Increment{{else}}Decrement{{end}}Float(k string, n fl
 		v.Object = v.Object.(float64) {{if .Inc}}+{{else}}-{{end}} n
 	default:
 		c.mu.Unlock()
-		return fmt.Errorf("The value for %s does not have type float32 or float64", k)
+		return errors.New("zcache.{{if .Inc}}Increment{{else}}Decrement{{end}}Float: the value for " + k + " does not have type float32 or float64")
 	}
 	c.items[k] = v
 	c.mu.Unlock()
@@ -65,7 +65,7 @@ func main() {
 		"uintptr", "uint8", "uint16", "uint32", "uint64", "float32", "float64"}
 
 	out := new(strings.Builder)
-	out.WriteString("package cache\n\nimport \"fmt\"\n\n")
+	out.WriteString("package cache\n\nimport \"errors\"\n")
 	err := tplFloat.Execute(out, struct {
 		Inc bool
 	}{true})

@@ -4,7 +4,7 @@ package cache
 
 import (
 	"encoding/gob"
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"runtime"
@@ -96,7 +96,7 @@ func (c *cache) Add(k string, x interface{}, d time.Duration) error {
 	_, found := c.get(k)
 	if found {
 		c.mu.Unlock()
-		return fmt.Errorf("Item %s already exists", k)
+		return errors.New("zcache.Add: item " + k + "already exists")
 	}
 	c.set(k, x, d)
 	c.mu.Unlock()
@@ -110,7 +110,7 @@ func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 	_, found := c.get(k)
 	if !found {
 		c.mu.Unlock()
-		return fmt.Errorf("Item %s doesn't exist", k)
+		return errors.New("zcache.Repalce: item " + k + " doesn't exist")
 	}
 	c.set(k, x, d)
 	c.mu.Unlock()
@@ -191,7 +191,7 @@ func (c *cache) Increment(k string, n int64) error {
 	v, found := c.items[k]
 	if !found || v.Expired() {
 		c.mu.Unlock()
-		return fmt.Errorf("Item %s not found", k)
+		return errors.New("zcache.Increment: item " + k + " not found")
 	}
 	switch v.Object.(type) {
 	case int:
@@ -222,7 +222,7 @@ func (c *cache) Increment(k string, n int64) error {
 		v.Object = v.Object.(float64) + float64(n)
 	default:
 		c.mu.Unlock()
-		return fmt.Errorf("The value for %s is not an integer", k)
+		return errors.New("zcache.Incremeny: the value for " + k + " is not an integer")
 	}
 	c.items[k] = v
 	c.mu.Unlock()
@@ -241,7 +241,7 @@ func (c *cache) Decrement(k string, n int64) error {
 	v, found := c.items[k]
 	if !found || v.Expired() {
 		c.mu.Unlock()
-		return fmt.Errorf("Item not found")
+		return errors.New("zcache.Decrement: item not found")
 	}
 	switch v.Object.(type) {
 	case int:
@@ -272,7 +272,7 @@ func (c *cache) Decrement(k string, n int64) error {
 		v.Object = v.Object.(float64) - float64(n)
 	default:
 		c.mu.Unlock()
-		return fmt.Errorf("The value for %s is not an integer", k)
+		return errors.New("zcache.Decrement: the value for " + k + " is not an integer")
 	}
 	c.items[k] = v
 	c.mu.Unlock()
@@ -342,7 +342,7 @@ func (c *cache) Save(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	defer func() {
 		if x := recover(); x != nil {
-			err = fmt.Errorf("Error registering item types with Gob library")
+			err = errors.New("zcache.Save: error registering item types with Gob library")
 		}
 	}()
 	c.mu.RLock()
