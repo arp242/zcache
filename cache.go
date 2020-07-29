@@ -1,6 +1,6 @@
 //go:generate sh -c "go run gen.go > incr.go"
 
-package cache
+package zcache
 
 import (
 	"encoding/gob"
