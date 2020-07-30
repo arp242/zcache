@@ -73,19 +73,23 @@ func (c *cache) SetDefault(k string, x interface{}) {
 	c.Set(k, x, DefaultExpiration)
 }
 
-// Touch updates the expiry of a key. It returns false if the key doesn't exist.
-func (c *cache) Touch(k string, d time.Duration) bool {
+// Touch replaces the expiry of a key and returns the current value.
+func (c *cache) Touch(k string, d time.Duration) (interface{}, bool) {
+	if d == DefaultExpiration {
+		d = c.defaultExpiration
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	item, found := c.items[k]
 	if !found {
-		return false
+		return nil, false
 	}
 
 	item.Expiration = time.Now().Add(d).UnixNano()
 	c.items[k] = item
-	return true
+	return item.Object, true
 }
 
 func (c *cache) set(k string, x interface{}, d time.Duration) {

@@ -28,7 +28,8 @@ Included changes:
 - Add `Touch()` to update the expiry on an item.
 
 
-### Usage
+Usage
+-----
 
 ```go
 import (
@@ -89,3 +90,22 @@ func main() {
 	}
 }
 ```
+
+FAQ
+---
+
+### How can I limit the size of the cache? Is there an option for this?
+
+Not really; zcache is intended as a thread-safe `map[string]interface{}` with
+time-based eviction. This keeps it nice and simple. Adding something like a LRU
+eviction mechanism not only makes the code more complex, it also makes the
+library worse for cases where you just want a `map[string]interface{}` since it
+requires additional memory and makes some operations more expensive (unless a
+new API is added which make the API worse for those use cases).
+
+So unless I or someone else comes up with a way to do this which doesn't detract
+anything from the simple `map[string]interface{}` use case, I'd rather not add
+it. Perhaps wrapping `zcache.Cache` and overriding some methods could work, but
+I haven't looked at it.
+
+tl;dr: this isn't designed to solve every caching use case. That's a feature.

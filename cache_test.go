@@ -651,11 +651,14 @@ func TestTouch(t *testing.T) {
 	raceTest(tc, func() {
 		tc.Set("a", "b", 5*time.Second)
 		_, first, _ := tc.GetWithExpiration("a")
-		ok := tc.Touch("a", 10*time.Second)
+		v, ok := tc.Touch("a", 10*time.Second)
 		if !ok {
 			t.Fatal("!ok")
 		}
 		_, second, _ := tc.GetWithExpiration("a")
+		if v.(string) != "b" {
+			t.Error("wrong value")
+		}
 
 		if first.Equal(second) {
 			t.Errorf("not updated\nfirst:  %s\nsecond: %s", first, second)
