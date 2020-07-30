@@ -6,33 +6,6 @@ haven't been included:
     TODO       TODO :-)
 
 
-- TODO
-  https://github.com/patrickmn/go-cache/issues/48
-
-  Look at this.
-
-- TODO
-  https://github.com/patrickmn/go-cache/issues/118
-
-- TODO
-  https://github.com/patrickmn/go-cache/issues/49
-
-  Look at this.
-
-- TODO
-  https://github.com/patrickmn/go-cache/issues/108
-
-  Can look if this provides significant better performance; otherwise you can
-  just use a loop.
-
-- DECLINED
-  https://github.com/patrickmn/go-cache/issues/5
-  https://github.com/patrickmn/go-cache/pull/17
-
-  See FAQ; maybe we can add this as a wrapper and new `zcache.LRUCache` or some
-  such. Max size is even harder, since getting the size of an object is
-  non-trivial.
-
 - INCLUCDED
   https://github.com/patrickmn/go-cache/pull/20
   https://github.com/patrickmn/go-cache/pull/66
@@ -41,6 +14,56 @@ haven't been included:
   https://github.com/patrickmn/go-cache/issues/65
 
   Added as `Touch()`
+
+- INCLUDED
+  https://github.com/patrickmn/go-cache/pull/78
+  https://github.com/patrickmn/go-cache/pull/81
+  https://github.com/patrickmn/go-cache/pull/100
+
+  All of them are essentially the same issue: do something with all keys. Added
+  a `Keys()` method to return an (unsorted) list of keys.
+
+- TODO
+
+  TODO
+
+
+
+
+- TODO
+  https://github.com/patrickmn/go-cache/issues/118
+
+  Add as Modify()?
+
+  cache.Modify("key", func(x interface{}) interface{} {
+        x = x.(map[string]string)
+        x["foo"] = "qwe"
+        return x
+       // Do stuff while it's locked.
+  })
+
+- DECLINED
+  https://github.com/patrickmn/go-cache/issues/49
+
+  You can start your own goroutine if you want; this can be potential
+  tricky/dangerous as you really don't want to spawn thousands of goroutines at
+  the same time, and it may be surprising for some.
+
+- DECLINED
+  https://github.com/patrickmn/go-cache/issues/108
+
+  The performance difference is not that large compared to a for loop (about
+  970ns/op vs 1450 ns/op for 50 items, and it adds an alloc), it's not clear how
+  to make a consistent API for this (how do you return found? what if there are
+  duplicate keys?), and overall I don't really think it's worth it.
+
+- DECLINED
+  https://github.com/patrickmn/go-cache/issues/5
+  https://github.com/patrickmn/go-cache/pull/17
+
+  See FAQ; maybe we can add this as a wrapper and new `zcache.LRUCache` or some
+  such. Max size is even harder, since getting the size of an object is
+  non-trivial.
 
 - TODO
   https://github.com/patrickmn/go-cache/issues/104
@@ -108,14 +131,6 @@ haven't been included:
   Remove item and return value; don't like the function name but could include
   this. TODO
 
-- TODO
-  https://github.com/patrickmn/go-cache/pull/78
-  https://github.com/patrickmn/go-cache/pull/81
-
-  Both essentially solve the same issue; I think a Keys() method to return an
-  (unsorted) list of keys would be best.
-  TODO
-
 - DECLINED
   https://github.com/patrickmn/go-cache/pull/92
   https://github.com/patrickmn/go-cache/issues/116
@@ -138,11 +153,6 @@ haven't been included:
 
   This is probably useful; think a bit about the API.
 
-- INCLUDED
-  https://github.com/patrickmn/go-cache/pull/100
-
-  `DeleteFunc()` adresses this.
-
 - TODO
   https://github.com/patrickmn/go-cache/pull/106
   https://github.com/patrickmn/go-cache/pull/113
@@ -156,3 +166,8 @@ haven't been included:
   This is a breaking change, since Flush() now works different. You can also
   already do this by getting all the items and deleting one-by-one (or getting
   all the items, Flush(), and calling onEvict()).
+
+- DECLINED
+  https://github.com/patrickmn/go-cache/issues/48
+
+  I'm not so sure this is actually a bug, as you're overwriting values.

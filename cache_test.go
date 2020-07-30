@@ -2,9 +2,10 @@ package zcache
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
-	"runtime"
-	"strconv"
+	"reflect"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -393,258 +394,6 @@ func TestSerializeUnserializable(t *testing.T) {
 	}
 }
 
-func BenchmarkCacheGetExpiring(b *testing.B) {
-	benchmarkCacheGet(b, 5*time.Minute)
-}
-
-func BenchmarkCacheGetNotExpiring(b *testing.B) {
-	benchmarkCacheGet(b, NoExpiration)
-}
-
-func benchmarkCacheGet(b *testing.B, exp time.Duration) {
-	b.StopTimer()
-	tc := New(exp, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.Get("foo")
-	}
-}
-
-func BenchmarkRWMutexMapGet(b *testing.B) {
-	b.StopTimer()
-	m := map[string]string{
-		"foo": "bar",
-	}
-	mu := sync.RWMutex{}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		mu.RLock()
-		_, _ = m["foo"]
-		mu.RUnlock()
-	}
-}
-
-func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
-	b.StopTimer()
-	s := struct{ name string }{name: "foo"}
-	m := map[interface{}]string{
-		s: "bar",
-	}
-	mu := sync.RWMutex{}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		mu.RLock()
-		_, _ = m[s]
-		mu.RUnlock()
-	}
-}
-
-func BenchmarkRWMutexInterfaceMapGetString(b *testing.B) {
-	b.StopTimer()
-	m := map[interface{}]string{
-		"foo": "bar",
-	}
-	mu := sync.RWMutex{}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		mu.RLock()
-		_, _ = m["foo"]
-		mu.RUnlock()
-	}
-}
-
-func BenchmarkCacheGetConcurrentExpiring(b *testing.B) {
-	benchmarkCacheGetConcurrent(b, 5*time.Minute)
-}
-
-func BenchmarkCacheGetConcurrentNotExpiring(b *testing.B) {
-	benchmarkCacheGetConcurrent(b, NoExpiration)
-}
-
-func benchmarkCacheGetConcurrent(b *testing.B, exp time.Duration) {
-	b.StopTimer()
-	tc := New(exp, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
-	wg := new(sync.WaitGroup)
-	workers := runtime.NumCPU()
-	each := b.N / workers
-	wg.Add(workers)
-	b.StartTimer()
-	for i := 0; i < workers; i++ {
-		go func() {
-			for j := 0; j < each; j++ {
-				tc.Get("foo")
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-}
-
-func BenchmarkRWMutexMapGetConcurrent(b *testing.B) {
-	b.StopTimer()
-	m := map[string]string{
-		"foo": "bar",
-	}
-	mu := sync.RWMutex{}
-	wg := new(sync.WaitGroup)
-	workers := runtime.NumCPU()
-	each := b.N / workers
-	wg.Add(workers)
-	b.StartTimer()
-	for i := 0; i < workers; i++ {
-		go func() {
-			for j := 0; j < each; j++ {
-				mu.RLock()
-				_, _ = m["foo"]
-				mu.RUnlock()
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-}
-
-func BenchmarkCacheGetManyConcurrentExpiring(b *testing.B) {
-	benchmarkCacheGetManyConcurrent(b, 5*time.Minute)
-}
-
-func BenchmarkCacheGetManyConcurrentNotExpiring(b *testing.B) {
-	benchmarkCacheGetManyConcurrent(b, NoExpiration)
-}
-
-func benchmarkCacheGetManyConcurrent(b *testing.B, exp time.Duration) {
-	// This is the same as BenchmarkCacheGetConcurrent, but its result
-	// can be compared against BenchmarkShardedCacheGetManyConcurrent
-	// in sharded_test.go.
-	b.StopTimer()
-	n := 10000
-	tc := New(exp, 0)
-	keys := make([]string, n)
-	for i := 0; i < n; i++ {
-		k := "foo" + strconv.Itoa(i)
-		keys[i] = k
-		tc.Set(k, "bar", DefaultExpiration)
-	}
-	each := b.N / n
-	wg := new(sync.WaitGroup)
-	wg.Add(n)
-	for _, v := range keys {
-		go func(k string) {
-			for j := 0; j < each; j++ {
-				tc.Get(k)
-			}
-			wg.Done()
-		}(v)
-	}
-	b.StartTimer()
-	wg.Wait()
-}
-
-func BenchmarkCacheSetExpiring(b *testing.B) {
-	benchmarkCacheSet(b, 5*time.Minute)
-}
-
-func BenchmarkCacheSetNotExpiring(b *testing.B) {
-	benchmarkCacheSet(b, NoExpiration)
-}
-
-func benchmarkCacheSet(b *testing.B, exp time.Duration) {
-	b.StopTimer()
-	tc := New(exp, 0)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar", DefaultExpiration)
-	}
-}
-
-func BenchmarkRWMutexMapSet(b *testing.B) {
-	b.StopTimer()
-	m := map[string]string{}
-	mu := sync.RWMutex{}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		mu.Lock()
-		m["foo"] = "bar"
-		mu.Unlock()
-	}
-}
-
-func BenchmarkCacheSetDelete(b *testing.B) {
-	b.StopTimer()
-	tc := New(DefaultExpiration, 0)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar", DefaultExpiration)
-		tc.Delete("foo")
-	}
-}
-
-func BenchmarkRWMutexMapSetDelete(b *testing.B) {
-	b.StopTimer()
-	m := map[string]string{}
-	mu := sync.RWMutex{}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		mu.Lock()
-		m["foo"] = "bar"
-		mu.Unlock()
-		mu.Lock()
-		delete(m, "foo")
-		mu.Unlock()
-	}
-}
-
-func BenchmarkCacheSetDeleteSingleLock(b *testing.B) {
-	b.StopTimer()
-	tc := New(DefaultExpiration, 0)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.mu.Lock()
-		tc.set("foo", "bar", DefaultExpiration)
-		tc.delete("foo")
-		tc.mu.Unlock()
-	}
-}
-
-func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
-	b.StopTimer()
-	m := map[string]string{}
-	mu := sync.RWMutex{}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		mu.Lock()
-		m["foo"] = "bar"
-		delete(m, "foo")
-		mu.Unlock()
-	}
-}
-
-func BenchmarkIncrementInt(b *testing.B) {
-	b.StopTimer()
-	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 0, DefaultExpiration)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.IncrementInt("foo", 1)
-	}
-}
-
-func BenchmarkDeleteExpiredLoop(b *testing.B) {
-	b.StopTimer()
-	tc := New(5*time.Minute, 0)
-	tc.mu.Lock()
-	for i := 0; i < 100000; i++ {
-		tc.set(strconv.Itoa(i), "bar", DefaultExpiration)
-	}
-	tc.mu.Unlock()
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.DeleteExpired()
-	}
-}
-
 func TestTouch(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
@@ -757,4 +506,91 @@ func TestGetWithExpiration(t *testing.T) {
 	if expiration.UnixNano() < time.Now().UnixNano() {
 		t.Error("expiration for e is in the past")
 	}
+}
+
+func TestAdd(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	err := tc.Add("foo", "bar", DefaultExpiration)
+	if err != nil {
+		t.Error("Couldn't add foo even though it shouldn't exist")
+	}
+	err = tc.Add("foo", "baz", DefaultExpiration)
+	if err == nil {
+		t.Error("Successfully added another foo when it should have returned an error")
+	}
+}
+
+func TestReplace(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	err := tc.Replace("foo", "bar", DefaultExpiration)
+	if err == nil {
+		t.Error("Replaced foo when it shouldn't exist")
+	}
+	tc.Set("foo", "bar", DefaultExpiration)
+	err = tc.Replace("foo", "bar", DefaultExpiration)
+	if err != nil {
+		t.Error("Couldn't replace existing key foo")
+	}
+}
+
+func TestDelete(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+
+	raceTest(tc, func() {
+		tc.Set("foo", "bar", DefaultExpiration)
+		tc.Delete("foo")
+		wantKeys(t, tc, []string{}, []string{"foo"})
+	})
+}
+
+func TestItems(t *testing.T) {
+	tc := New(DefaultExpiration, 1*time.Millisecond)
+	raceTest(tc, func() {
+		tc.Set("foo", "1", DefaultExpiration)
+		tc.Set("bar", "2", DefaultExpiration)
+		tc.Set("baz", "3", DefaultExpiration)
+		tc.Set("exp", "4", 1)
+		time.Sleep(2 * time.Millisecond)
+		if n := tc.ItemCount(); n != 3 {
+			t.Errorf("Item count is not 3: %d", n)
+		}
+
+		keys := tc.Keys()
+		sort.Strings(keys)
+		if fmt.Sprintf("%v", keys) != "[bar baz foo]" {
+			t.Errorf("%v", keys)
+		}
+
+		want := map[string]Item{
+			"foo": Item{Object: "1"},
+			"bar": Item{Object: "2"},
+			"baz": Item{Object: "3"},
+		}
+		if !reflect.DeepEqual(tc.Items(), want) {
+			t.Errorf("%v", tc.Items())
+		}
+	})
+}
+
+func TestFlush(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	raceTest(tc, func() {
+		tc.Set("foo", "bar", DefaultExpiration)
+		tc.Set("baz", "yes", DefaultExpiration)
+		tc.Flush()
+		x, found := tc.Get("foo")
+		if found {
+			t.Error("foo was found, but it should have been deleted")
+		}
+		if x != nil {
+			t.Error("x is not nil:", x)
+		}
+		x, found = tc.Get("baz")
+		if found {
+			t.Error("baz was found, but it should have been deleted")
+		}
+		if x != nil {
+			t.Error("x is not nil:", x)
+		}
+	})
 }

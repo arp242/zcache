@@ -297,32 +297,6 @@ func (c *cache) Delete(k string) {
 	}
 }
 
-// DeleteFunc iterates over all the keys until the stop return is true, and
-// deletes all keys for which the del argument is true.
-func (c *cache) DeleteFunc(f func(key string) (del bool, stop bool)) {
-	c.mu.RLock()
-	keys := make([]string, 0, len(c.items))
-	for k := range c.items {
-		keys = append(keys, k)
-	}
-	c.mu.RUnlock()
-
-	for _, k := range keys {
-		del, stop := f(k)
-		if del {
-			c.mu.Lock()
-			v, evicted := c.delete(k)
-			c.mu.Unlock()
-			if evicted {
-				c.onEvicted(k, v)
-			}
-		}
-		if stop {
-			break
-		}
-	}
-}
-
 func (c *cache) delete(k string) (interface{}, bool) {
 	if c.onEvicted != nil {
 		if v, ok := c.items[k]; ok {
@@ -344,6 +318,7 @@ func (c *cache) DeleteExpired() {
 	var evictedItems []keyAndValue
 	now := time.Now().UnixNano()
 	c.mu.Lock()
+
 	for k, v := range c.items {
 		// "Inlining" of expired
 		if v.Expiration > 0 && now > v.Expiration {
@@ -450,6 +425,7 @@ func (c *cache) LoadFile(fname string) error {
 func (c *cache) Items() map[string]Item {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
 	m := make(map[string]Item, len(c.items))
 	now := time.Now().UnixNano()
 	for k, v := range c.items {
@@ -460,6 +436,23 @@ func (c *cache) Items() map[string]Item {
 		m[k] = v
 	}
 	return m
+}
+
+// Keys gets a list of all keys, in no particular order.
+func (c *cache) Keys() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	keys := make([]string, 0, len(c.items))
+	now := time.Now().UnixNano()
+	for k, v := range c.items {
+		// "Inlining" of Expired
+		if v.Expiration > 0 && now > v.Expiration {
+			continue
+		}
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // Returns the number of items in the cache. This may include items that have
