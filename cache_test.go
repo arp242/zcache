@@ -669,18 +669,18 @@ func TestTouch(t *testing.T) {
 func TestGetWithExpiration(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	a, expiration, found := tc.GetWithExpiration("a")
-	if found || a != nil || !expiration.IsZero() {
+	a, expiration, ok := tc.GetWithExpiration("a")
+	if ok || a != nil || !expiration.IsZero() {
 		t.Error("Getting A found value that shouldn't exist:", a)
 	}
 
-	b, expiration, found := tc.GetWithExpiration("b")
-	if found || b != nil || !expiration.IsZero() {
+	b, expiration, ok := tc.GetWithExpiration("b")
+	if ok || b != nil || !expiration.IsZero() {
 		t.Error("Getting B found value that shouldn't exist:", b)
 	}
 
-	c, expiration, found := tc.GetWithExpiration("c")
-	if found || c != nil || !expiration.IsZero() {
+	c, expiration, ok := tc.GetWithExpiration("c")
+	if ok || c != nil || !expiration.IsZero() {
 		t.Error("Getting C found value that shouldn't exist:", c)
 	}
 
@@ -690,8 +690,8 @@ func TestGetWithExpiration(t *testing.T) {
 	tc.Set("d", 1, NoExpiration)
 	tc.Set("e", 1, 50*time.Millisecond)
 
-	x, expiration, found := tc.GetWithExpiration("a")
-	if !found {
+	x, expiration, ok := tc.GetWithExpiration("a")
+	if !ok {
 		t.Error("a was not found while getting a2")
 	}
 	if x == nil {
@@ -703,8 +703,8 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for a is not a zeroed time")
 	}
 
-	x, expiration, found = tc.GetWithExpiration("b")
-	if !found {
+	x, expiration, ok = tc.GetWithExpiration("b")
+	if !ok {
 		t.Error("b was not found while getting b2")
 	}
 	if x == nil {
@@ -716,8 +716,8 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for b is not a zeroed time")
 	}
 
-	x, expiration, found = tc.GetWithExpiration("c")
-	if !found {
+	x, expiration, ok = tc.GetWithExpiration("c")
+	if !ok {
 		t.Error("c was not found while getting c2")
 	}
 	if x == nil {
@@ -729,8 +729,8 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for c is not a zeroed time")
 	}
 
-	x, expiration, found = tc.GetWithExpiration("d")
-	if !found {
+	x, expiration, ok = tc.GetWithExpiration("d")
+	if !ok {
 		t.Error("d was not found while getting d2")
 	}
 	if x == nil {
@@ -742,8 +742,8 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for d is not a zeroed time")
 	}
 
-	x, expiration, found = tc.GetWithExpiration("e")
-	if !found {
+	x, expiration, ok = tc.GetWithExpiration("e")
+	if !ok {
 		t.Error("e was not found while getting e2")
 	}
 	if x == nil {

@@ -82,8 +82,8 @@ func (c *cache) Touch(k string, d time.Duration) (interface{}, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	item, found := c.items[k]
-	if !found {
+	item, ok := c.items[k]
+	if !ok {
 		return nil, false
 	}
 
@@ -112,8 +112,8 @@ func (c *cache) Add(k string, x interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	_, found := c.get(k)
-	if found {
+	_, ok := c.get(k)
+	if ok {
 		return errors.New("zcache.Add: item " + k + "already exists")
 	}
 	c.set(k, x, d)
@@ -126,8 +126,8 @@ func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	_, found := c.get(k)
-	if !found {
+	_, ok := c.get(k)
+	if !ok {
 		return errors.New("zcache.Repalce: item " + k + " doesn't exist")
 	}
 	c.set(k, x, d)
@@ -141,8 +141,8 @@ func (c *cache) Get(k string) (interface{}, bool) {
 	defer c.mu.RUnlock()
 
 	// "Inlining" of get and Expired
-	item, found := c.items[k]
-	if !found {
+	item, ok := c.items[k]
+	if !ok {
 		return nil, false
 	}
 	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
@@ -160,8 +160,8 @@ func (c *cache) GetWithExpiration(k string) (interface{}, time.Time, bool) {
 	defer c.mu.RUnlock()
 
 	// "Inlining" of get and Expired
-	item, found := c.items[k]
-	if !found {
+	item, ok := c.items[k]
+	if !ok {
 		return nil, time.Time{}, false
 	}
 
@@ -180,8 +180,8 @@ func (c *cache) GetWithExpiration(k string) (interface{}, time.Time, bool) {
 }
 
 func (c *cache) get(k string) (interface{}, bool) {
-	item, found := c.items[k]
-	if !found {
+	item, ok := c.items[k]
+	if !ok {
 		return nil, false
 	}
 	// "Inlining" of Expired
@@ -200,8 +200,8 @@ func (c *cache) Increment(k string, n int64) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	v, found := c.items[k]
-	if !found || v.Expired() {
+	v, ok := c.items[k]
+	if !ok || v.Expired() {
 		return errors.New("zcache.Increment: item " + k + " not found")
 	}
 	switch v.Object.(type) {
@@ -249,8 +249,8 @@ func (c *cache) Decrement(k string, n int64) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	v, found := c.items[k]
-	if !found || v.Expired() {
+	v, ok := c.items[k]
+	if !ok || v.Expired() {
 		return errors.New("zcache.Decrement: item not found")
 	}
 	switch v.Object.(type) {
@@ -325,7 +325,7 @@ func (c *cache) DeleteFunc(f func(key string) (del bool, stop bool)) {
 
 func (c *cache) delete(k string) (interface{}, bool) {
 	if c.onEvicted != nil {
-		if v, found := c.items[k]; found {
+		if v, ok := c.items[k]; ok {
 			delete(c.items, k)
 			return v.Object, true
 		}
@@ -419,8 +419,8 @@ func (c *cache) Load(r io.Reader) error {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		for k, v := range items {
-			ov, found := c.items[k]
-			if !found || ov.Expired() {
+			ov, ok := c.items[k]
+			if !ok || ov.Expired() {
 				c.items[k] = v
 			}
 		}
