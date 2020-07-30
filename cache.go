@@ -50,7 +50,7 @@ type cache struct {
 // Add an item to the cache, replacing any existing item. If the duration is 0
 // (DefaultExpiration), the cache's default expiration time is used. If it is -1
 // (NoExpiration), the item never expires.
-func (c *cache) Set(k string, x interface{}, d time.Duration) {
+func (c *cache) Set(k string, v interface{}, d time.Duration) {
 	// "Inlining" of set
 	var e int64
 	if d == DefaultExpiration {
@@ -62,15 +62,15 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.items[k] = Item{
-		Object:     x,
+		Object:     v,
 		Expiration: e,
 	}
 }
 
 // Add an item to the cache, replacing any existing item, using the default
 // expiration.
-func (c *cache) SetDefault(k string, x interface{}) {
-	c.Set(k, x, DefaultExpiration)
+func (c *cache) SetDefault(k string, v interface{}) {
+	c.Set(k, v, DefaultExpiration)
 }
 
 // Touch replaces the expiry of a key and returns the current value.
@@ -92,7 +92,7 @@ func (c *cache) Touch(k string, d time.Duration) (interface{}, bool) {
 	return item.Object, true
 }
 
-func (c *cache) set(k string, x interface{}, d time.Duration) {
+func (c *cache) set(k string, v interface{}, d time.Duration) {
 	var e int64
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
@@ -101,14 +101,14 @@ func (c *cache) set(k string, x interface{}, d time.Duration) {
 		e = time.Now().Add(d).UnixNano()
 	}
 	c.items[k] = Item{
-		Object:     x,
+		Object:     v,
 		Expiration: e,
 	}
 }
 
 // Add an item to the cache only if an item doesn't already exist for the given
 // key, or if the existing item has expired. Returns an error otherwise.
-func (c *cache) Add(k string, x interface{}, d time.Duration) error {
+func (c *cache) Add(k string, v interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -116,13 +116,13 @@ func (c *cache) Add(k string, x interface{}, d time.Duration) error {
 	if ok {
 		return errors.New("zcache.Add: item " + k + "already exists")
 	}
-	c.set(k, x, d)
+	c.set(k, v, d)
 	return nil
 }
 
 // Set a new value for the cache key only if it already exists, and the existing
 // item hasn't expired. Returns an error otherwise.
-func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
+func (c *cache) Replace(k string, v interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -130,7 +130,7 @@ func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 	if !ok {
 		return errors.New("zcache.Replace: item " + k + " doesn't exist")
 	}
-	c.set(k, x, d)
+	c.set(k, v, d)
 	return nil
 }
 
@@ -368,7 +368,7 @@ func (c *cache) OnEvicted(f func(string, interface{})) {
 func (c *cache) Save(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	defer func() {
-		if x := recover(); x != nil {
+		if rec := recover(); rec != nil {
 			err = errors.New("zcache.Save: error registering item types with Gob library")
 		}
 	}()

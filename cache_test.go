@@ -76,33 +76,33 @@ func TestCache(t *testing.T) {
 	tc.Set("b", "b", DefaultExpiration)
 	tc.Set("c", 3.5, DefaultExpiration)
 
-	x, found := tc.Get("a")
+	v, found := tc.Get("a")
 	if !found {
 		t.Error("a was not found while getting a2")
 	}
-	if x == nil {
-		t.Error("x for a is nil")
-	} else if a2 := x.(int); a2+2 != 3 {
+	if v == nil {
+		t.Error("v for a is nil")
+	} else if a2 := v.(int); a2+2 != 3 {
 		t.Error("a2 (which should be 1) plus 2 does not equal 3; value:", a2)
 	}
 
-	x, found = tc.Get("b")
+	v, found = tc.Get("b")
 	if !found {
 		t.Error("b was not found while getting b2")
 	}
-	if x == nil {
-		t.Error("x for b is nil")
-	} else if b2 := x.(string); b2+"B" != "bB" {
+	if v == nil {
+		t.Error("v for b is nil")
+	} else if b2 := v.(string); b2+"B" != "bB" {
 		t.Error("b2 (which should be b) plus B does not equal bB; value:", b2)
 	}
 
-	x, found = tc.Get("c")
+	v, found = tc.Get("c")
 	if !found {
 		t.Error("c was not found while getting c2")
 	}
-	if x == nil {
-		t.Error("x for c is nil")
-	} else if c2 := x.(float64); c2+1.2 != 4.7 {
+	if v == nil {
+		t.Error("v for c is nil")
+	} else if c2 := v.(float64); c2+1.2 != 4.7 {
 		t.Error("c2 (which should be 3.5) plus 1.2 does not equal 4.7; value:", c2)
 	}
 }
@@ -176,11 +176,11 @@ func TestNewFrom(t *testing.T) {
 func TestStorePointerToStruct(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	tc.Set("foo", &TestStruct{Num: 1}, DefaultExpiration)
-	x, found := tc.Get("foo")
+	v, found := tc.Get("foo")
 	if !found {
 		t.Fatal("*TestStruct was not found for foo")
 	}
-	foo := x.(*TestStruct)
+	foo := v.(*TestStruct)
 	foo.Num++
 
 	y, found := tc.Get("foo")
@@ -207,11 +207,11 @@ func TestOnEvicted(t *testing.T) {
 		tc.Set("bar", 4, DefaultExpiration)
 	})
 	tc.Delete("foo")
-	x, _ := tc.Get("bar")
+	v, _ := tc.Get("bar")
 	if !works {
 		t.Error("works bool not true")
 	}
-	if x.(int) != 4 {
+	if v.(int) != 4 {
 		t.Error("bar was not 4")
 	}
 }
@@ -439,65 +439,65 @@ func TestGetWithExpiration(t *testing.T) {
 	tc.Set("d", 1, NoExpiration)
 	tc.Set("e", 1, 50*time.Millisecond)
 
-	x, expiration, ok := tc.GetWithExpiration("a")
+	v, expiration, ok := tc.GetWithExpiration("a")
 	if !ok {
 		t.Error("a was not found while getting a2")
 	}
-	if x == nil {
-		t.Error("x for a is nil")
-	} else if a2 := x.(int); a2+2 != 3 {
+	if v == nil {
+		t.Error("v for a is nil")
+	} else if a2 := v.(int); a2+2 != 3 {
 		t.Error("a2 (which should be 1) plus 2 does not equal 3; value:", a2)
 	}
 	if !expiration.IsZero() {
 		t.Error("expiration for a is not a zeroed time")
 	}
 
-	x, expiration, ok = tc.GetWithExpiration("b")
+	v, expiration, ok = tc.GetWithExpiration("b")
 	if !ok {
 		t.Error("b was not found while getting b2")
 	}
-	if x == nil {
-		t.Error("x for b is nil")
-	} else if b2 := x.(string); b2+"B" != "bB" {
+	if v == nil {
+		t.Error("v for b is nil")
+	} else if b2 := v.(string); b2+"B" != "bB" {
 		t.Error("b2 (which should be b) plus B does not equal bB; value:", b2)
 	}
 	if !expiration.IsZero() {
 		t.Error("expiration for b is not a zeroed time")
 	}
 
-	x, expiration, ok = tc.GetWithExpiration("c")
+	v, expiration, ok = tc.GetWithExpiration("c")
 	if !ok {
 		t.Error("c was not found while getting c2")
 	}
-	if x == nil {
-		t.Error("x for c is nil")
-	} else if c2 := x.(float64); c2+1.2 != 4.7 {
+	if v == nil {
+		t.Error("v for c is nil")
+	} else if c2 := v.(float64); c2+1.2 != 4.7 {
 		t.Error("c2 (which should be 3.5) plus 1.2 does not equal 4.7; value:", c2)
 	}
 	if !expiration.IsZero() {
 		t.Error("expiration for c is not a zeroed time")
 	}
 
-	x, expiration, ok = tc.GetWithExpiration("d")
+	v, expiration, ok = tc.GetWithExpiration("d")
 	if !ok {
 		t.Error("d was not found while getting d2")
 	}
-	if x == nil {
-		t.Error("x for d is nil")
-	} else if d2 := x.(int); d2+2 != 3 {
+	if v == nil {
+		t.Error("v for d is nil")
+	} else if d2 := v.(int); d2+2 != 3 {
 		t.Error("d (which should be 1) plus 2 does not equal 3; value:", d2)
 	}
 	if !expiration.IsZero() {
 		t.Error("expiration for d is not a zeroed time")
 	}
 
-	x, expiration, ok = tc.GetWithExpiration("e")
+	v, expiration, ok = tc.GetWithExpiration("e")
 	if !ok {
 		t.Error("e was not found while getting e2")
 	}
-	if x == nil {
-		t.Error("x for e is nil")
-	} else if e2 := x.(int); e2+2 != 3 {
+	if v == nil {
+		t.Error("v for e is nil")
+	} else if e2 := v.(int); e2+2 != 3 {
 		t.Error("e (which should be 1) plus 2 does not equal 3; value:", e2)
 	}
 	if expiration.UnixNano() != tc.items["e"].Expiration {
@@ -615,19 +615,19 @@ func TestFlush(t *testing.T) {
 		tc.Set("foo", "bar", DefaultExpiration)
 		tc.Set("baz", "yes", DefaultExpiration)
 		tc.Flush()
-		x, found := tc.Get("foo")
+		v, found := tc.Get("foo")
 		if found {
 			t.Error("foo was found, but it should have been deleted")
 		}
-		if x != nil {
-			t.Error("x is not nil:", x)
+		if v != nil {
+			t.Error("v is not nil:", v)
 		}
-		x, found = tc.Get("baz")
+		v, found = tc.Get("baz")
 		if found {
 			t.Error("baz was found, but it should have been deleted")
 		}
-		if x != nil {
-			t.Error("x is not nil:", x)
+		if v != nil {
+			t.Error("v is not nil:", v)
 		}
 	})
 }
