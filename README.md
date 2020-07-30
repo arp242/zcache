@@ -17,15 +17,16 @@ https://pkg.go.dev/zgo.at/zcache
 ---
 
 This is a fork of https://github.com/patrickmn/go-cache – which no longer seems
-actively maintained. v1 will remain 100% compatible.
+actively maintained. v1 is intended to be 100% compatible and a drop-in
+replacement.
 
-Included changes:
+See [issues.markdown][/issues.markdown] for a complete list of what was
+included; in short:
 
 - Various small internal improvement.
-
-- Add `DeleteFunc()` to delete keys by callback.
-
+- Add `Keys()` to list all keys
 - Add `Touch()` to update the expiry on an item.
+- Add `GetStale()` to get items even after they've expired.
 
 
 Usage

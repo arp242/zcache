@@ -508,6 +508,43 @@ func TestGetWithExpiration(t *testing.T) {
 	}
 }
 
+func TestGetStale(t *testing.T) {
+	tc := New(5*time.Millisecond, 0)
+
+	raceTest(tc, func() {
+		tc.SetDefault("x", "y")
+
+		v, exp, ok := tc.GetStale("x")
+		if !ok {
+			t.Errorf("Did not get expired item: %v", v)
+		}
+		if exp {
+			t.Error("exp set")
+		}
+		if v.(string) != "y" {
+			t.Errorf("value wrong: %v", v)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		v, ok = tc.Get("x")
+		if ok || v != nil {
+			t.Fatalf("Get retrieved expired item: %v", v)
+		}
+
+		v, exp, ok = tc.GetStale("x")
+		if !ok {
+			t.Errorf("Did not get expired item: %v", v)
+		}
+		if !exp {
+			t.Error("exp not set")
+		}
+		if v.(string) != "y" {
+			t.Errorf("value wrong: %v", v)
+		}
+	})
+}
+
 func TestAdd(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	err := tc.Add("foo", "bar", DefaultExpiration)

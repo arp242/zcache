@@ -128,7 +128,7 @@ func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 
 	_, ok := c.get(k)
 	if !ok {
-		return errors.New("zcache.Repalce: item " + k + " doesn't exist")
+		return errors.New("zcache.Replace: item " + k + " doesn't exist")
 	}
 	c.set(k, x, d)
 	return nil
@@ -149,6 +149,24 @@ func (c *cache) Get(k string) (interface{}, bool) {
 		return nil, false
 	}
 	return item.Object, true
+}
+
+// GetStale gets an item from the cache without checking if it's expired.
+//
+// Returns the item or nil, a bool indicating that the item is expired, and a
+// bool indicating whether the key was found.
+func (c *cache) GetStale(k string) (v interface{}, expired bool, ok bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	// "Inlining" of get and Expired
+	item, ok := c.items[k]
+	if !ok {
+		return nil, false, false
+	}
+	return item.Object,
+		item.Expiration > 0 && time.Now().UnixNano() > item.Expiration,
+		true
 }
 
 // GetWithExpiration returns an item and its expiration time from the cache.
