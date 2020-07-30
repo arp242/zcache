@@ -69,6 +69,27 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	c.mu.Unlock()
 }
 
+// Add an item to the cache, replacing any existing item, using the default
+// expiration.
+func (c *cache) SetDefault(k string, x interface{}) {
+	c.Set(k, x, DefaultExpiration)
+}
+
+// Touch updates the expiry of a key. It returns false if the key doesn't exist.
+func (c *cache) Touch(k string, d time.Duration) bool {
+	c.mu.Lock()
+	item, found := c.items[k]
+	if !found {
+		c.mu.Unlock()
+		return false
+	}
+
+	item.Expiration = time.Now().Add(d).UnixNano()
+	c.items[k] = item
+	c.mu.Unlock()
+	return true
+}
+
 func (c *cache) set(k string, x interface{}, d time.Duration) {
 	var e int64
 	if d == DefaultExpiration {
@@ -81,12 +102,6 @@ func (c *cache) set(k string, x interface{}, d time.Duration) {
 		Object:     x,
 		Expiration: e,
 	}
-}
-
-// Add an item to the cache, replacing any existing item, using the default
-// expiration.
-func (c *cache) SetDefault(k string, x interface{}) {
-	c.Set(k, x, DefaultExpiration)
 }
 
 // Add an item to the cache only if an item doesn't already exist for the given
