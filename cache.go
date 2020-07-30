@@ -60,13 +60,11 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 		e = time.Now().Add(d).UnixNano()
 	}
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.items[k] = Item{
 		Object:     x,
 		Expiration: e,
 	}
-	// TODO: Calls to mu.Unlock are currently not deferred because defer
-	// adds ~200 ns (as of go1.)
-	c.mu.Unlock()
 }
 
 // Add an item to the cache, replacing any existing item, using the default
@@ -78,15 +76,15 @@ func (c *cache) SetDefault(k string, x interface{}) {
 // Touch updates the expiry of a key. It returns false if the key doesn't exist.
 func (c *cache) Touch(k string, d time.Duration) bool {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	item, found := c.items[k]
 	if !found {
-		c.mu.Unlock()
 		return false
 	}
 
 	item.Expiration = time.Now().Add(d).UnixNano()
 	c.items[k] = item
-	c.mu.Unlock()
 	return true
 }
 
@@ -108,13 +106,13 @@ func (c *cache) set(k string, x interface{}, d time.Duration) {
 // key, or if the existing item has expired. Returns an error otherwise.
 func (c *cache) Add(k string, x interface{}, d time.Duration) error {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	_, found := c.get(k)
 	if found {
-		c.mu.Unlock()
 		return errors.New("zcache.Add: item " + k + "already exists")
 	}
 	c.set(k, x, d)
-	c.mu.Unlock()
 	return nil
 }
 
@@ -122,13 +120,13 @@ func (c *cache) Add(k string, x interface{}, d time.Duration) error {
 // item hasn't expired. Returns an error otherwise.
 func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	_, found := c.get(k)
 	if !found {
-		c.mu.Unlock()
 		return errors.New("zcache.Repalce: item " + k + " doesn't exist")
 	}
 	c.set(k, x, d)
-	c.mu.Unlock()
 	return nil
 }
 
@@ -136,17 +134,16 @@ func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 // whether the key was found.
 func (c *cache) Get(k string) (interface{}, bool) {
 	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	// "Inlining" of get and Expired
 	item, found := c.items[k]
 	if !found {
-		c.mu.RUnlock()
 		return nil, false
 	}
 	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
-		c.mu.RUnlock()
 		return nil, false
 	}
-	c.mu.RUnlock()
 	return item.Object, true
 }
 
@@ -156,27 +153,25 @@ func (c *cache) Get(k string) (interface{}, bool) {
 // whether the key was found.
 func (c *cache) GetWithExpiration(k string) (interface{}, time.Time, bool) {
 	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	// "Inlining" of get and Expired
 	item, found := c.items[k]
 	if !found {
-		c.mu.RUnlock()
 		return nil, time.Time{}, false
 	}
 
 	if item.Expiration > 0 {
 		if time.Now().UnixNano() > item.Expiration {
-			c.mu.RUnlock()
 			return nil, time.Time{}, false
 		}
 
 		// Return the item and the expiration time
-		c.mu.RUnlock()
 		return item.Object, time.Unix(0, item.Expiration), true
 	}
 
 	// If expiration <= 0 (i.e. no expiration time set) then return the item
 	// and a zeroed time.Time
-	c.mu.RUnlock()
 	return item.Object, time.Time{}, true
 }
 
@@ -199,9 +194,10 @@ func (c *cache) get(k string) (interface{}, bool) {
 // of the specialized methods, e.g. IncrementInt64.
 func (c *cache) Increment(k string, n int64) error {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	v, found := c.items[k]
 	if !found || v.Expired() {
-		c.mu.Unlock()
 		return errors.New("zcache.Increment: item " + k + " not found")
 	}
 	switch v.Object.(type) {
@@ -232,11 +228,9 @@ func (c *cache) Increment(k string, n int64) error {
 	case float64:
 		v.Object = v.Object.(float64) + float64(n)
 	default:
-		c.mu.Unlock()
 		return errors.New("zcache.Incremeny: the value for " + k + " is not an integer")
 	}
 	c.items[k] = v
-	c.mu.Unlock()
 	return nil
 }
 
@@ -249,9 +243,10 @@ func (c *cache) Decrement(k string, n int64) error {
 	// TODO: Implement Increment and Decrement more cleanly.
 	// (Cannot do Increment(k, n*-1) for uints.)
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	v, found := c.items[k]
 	if !found || v.Expired() {
-		c.mu.Unlock()
 		return errors.New("zcache.Decrement: item not found")
 	}
 	switch v.Object.(type) {
@@ -282,11 +277,9 @@ func (c *cache) Decrement(k string, n int64) error {
 	case float64:
 		v.Object = v.Object.(float64) - float64(n)
 	default:
-		c.mu.Unlock()
 		return errors.New("zcache.Decrement: the value for " + k + " is not an integer")
 	}
 	c.items[k] = v
-	c.mu.Unlock()
 	return nil
 }
 
@@ -302,8 +295,6 @@ func (c *cache) Delete(k string) {
 
 // DeleteFunc iterates over all the keys until the stop return is true, and
 // deletes all keys for which the del argument is true.
-//
-// This will lock the cache while it's running.
 func (c *cache) DeleteFunc(f func(key string) (del bool, stop bool)) {
 	c.mu.RLock()
 	keys := make([]string, 0, len(c.items))
@@ -369,8 +360,8 @@ func (c *cache) DeleteExpired() {
 // not when it is overwritten.) Set to nil to disable.
 func (c *cache) OnEvicted(f func(string, interface{})) {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.onEvicted = f
-	c.mu.Unlock()
 }
 
 // Write the cache's items (using Gob) to an io.Writer.
@@ -471,16 +462,15 @@ func (c *cache) Items() map[string]Item {
 // expired, but have not yet been cleaned up.
 func (c *cache) ItemCount() int {
 	c.mu.RLock()
-	n := len(c.items)
-	c.mu.RUnlock()
-	return n
+	defer c.mu.RUnlock()
+	return len(c.items)
 }
 
 // Delete all items from the cache.
 func (c *cache) Flush() {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.items = map[string]Item{}
-	c.mu.Unlock()
 }
 
 type janitor struct {
