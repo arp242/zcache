@@ -209,6 +209,35 @@ func (c *cache) get(k string) (interface{}, bool) {
 	return item.Object, true
 }
 
+// Modify the value of an existing key; this can be used for appending to a list
+// or setting map keys:
+//
+//   zcache.Modify("key", func(v interface{}) interface{} {
+//         vv = v.(map[string]string)
+//         vv["k"] = "v"
+//         return vv
+//   })
+//
+// This is not run for keys that are not set yet; the boolean return indicates
+// if the key was set and if the function was applied.
+func (c *cache) Modify(k string, f func(interface{}) interface{}) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// "Inlining" of get and Expired
+	item, ok := c.items[k]
+	if !ok {
+		return false
+	}
+	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+		return false
+	}
+
+	item.Object = f(item.Object)
+	c.items[k] = item
+	return true
+}
+
 // Increment an item of type int, int8, int16, int32, int64, uintptr, uint,
 // uint8, uint32, or uint64, float32 or float64 by n. Returns an error if the
 // item's value is not an integer, if it was not found, or if it is not

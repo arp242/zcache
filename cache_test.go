@@ -32,23 +32,6 @@ func wantKeys(t *testing.T, tc *Cache, want []string, dontWant []string) {
 	}
 }
 
-func raceTest(tc *Cache, f func()) {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 10; i++ {
-			tc.SetDefault("race", "race")
-			tc.Delete("race")
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		f()
-	}()
-	wg.Wait()
-}
-
 type TestStruct struct {
 	Num      int
 	Children []*TestStruct
@@ -397,22 +380,20 @@ func TestSerializeUnserializable(t *testing.T) {
 func TestTouch(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	raceTest(tc, func() {
-		tc.Set("a", "b", 5*time.Second)
-		_, first, _ := tc.GetWithExpiration("a")
-		v, ok := tc.Touch("a", 10*time.Second)
-		if !ok {
-			t.Fatal("!ok")
-		}
-		_, second, _ := tc.GetWithExpiration("a")
-		if v.(string) != "b" {
-			t.Error("wrong value")
-		}
+	tc.Set("a", "b", 5*time.Second)
+	_, first, _ := tc.GetWithExpiration("a")
+	v, ok := tc.Touch("a", 10*time.Second)
+	if !ok {
+		t.Fatal("!ok")
+	}
+	_, second, _ := tc.GetWithExpiration("a")
+	if v.(string) != "b" {
+		t.Error("wrong value")
+	}
 
-		if first.Equal(second) {
-			t.Errorf("not updated\nfirst:  %s\nsecond: %s", first, second)
-		}
-	})
+	if first.Equal(second) {
+		t.Errorf("not updated\nfirst:  %s\nsecond: %s", first, second)
+	}
 }
 
 func TestGetWithExpiration(t *testing.T) {
@@ -511,38 +492,36 @@ func TestGetWithExpiration(t *testing.T) {
 func TestGetStale(t *testing.T) {
 	tc := New(5*time.Millisecond, 0)
 
-	raceTest(tc, func() {
-		tc.SetDefault("x", "y")
+	tc.SetDefault("x", "y")
 
-		v, exp, ok := tc.GetStale("x")
-		if !ok {
-			t.Errorf("Did not get expired item: %v", v)
-		}
-		if exp {
-			t.Error("exp set")
-		}
-		if v.(string) != "y" {
-			t.Errorf("value wrong: %v", v)
-		}
+	v, exp, ok := tc.GetStale("x")
+	if !ok {
+		t.Errorf("Did not get expired item: %v", v)
+	}
+	if exp {
+		t.Error("exp set")
+	}
+	if v.(string) != "y" {
+		t.Errorf("value wrong: %v", v)
+	}
 
-		time.Sleep(10 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 
-		v, ok = tc.Get("x")
-		if ok || v != nil {
-			t.Fatalf("Get retrieved expired item: %v", v)
-		}
+	v, ok = tc.Get("x")
+	if ok || v != nil {
+		t.Fatalf("Get retrieved expired item: %v", v)
+	}
 
-		v, exp, ok = tc.GetStale("x")
-		if !ok {
-			t.Errorf("Did not get expired item: %v", v)
-		}
-		if !exp {
-			t.Error("exp not set")
-		}
-		if v.(string) != "y" {
-			t.Errorf("value wrong: %v", v)
-		}
-	})
+	v, exp, ok = tc.GetStale("x")
+	if !ok {
+		t.Errorf("Did not get expired item: %v", v)
+	}
+	if !exp {
+		t.Error("exp not set")
+	}
+	if v.(string) != "y" {
+		t.Errorf("value wrong: %v", v)
+	}
 }
 
 func TestAdd(t *testing.T) {
@@ -573,11 +552,9 @@ func TestReplace(t *testing.T) {
 func TestDelete(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	raceTest(tc, func() {
-		tc.Set("foo", "bar", DefaultExpiration)
-		tc.Delete("foo")
-		wantKeys(t, tc, []string{}, []string{"foo"})
-	})
+	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Delete("foo")
+	wantKeys(t, tc, []string{}, []string{"foo"})
 }
 
 type onEvictTest struct {
@@ -606,80 +583,109 @@ func TestPop(t *testing.T) {
 	var onEvict onEvictTest
 	tc.OnEvicted(onEvict.add)
 
-	raceTest(tc, func() {
-		tc.Set("foo", "val", DefaultExpiration)
+	tc.Set("foo", "val", DefaultExpiration)
 
-		v, ok := tc.Pop("foo")
-		wantKeys(t, tc, []string{}, []string{"foo"})
-		if !ok {
-			t.Error("ok is false")
-		}
-		if v.(string) != "val" {
-			t.Errorf("wrong value: %v", v)
-		}
+	v, ok := tc.Pop("foo")
+	wantKeys(t, tc, []string{}, []string{"foo"})
+	if !ok {
+		t.Error("ok is false")
+	}
+	if v.(string) != "val" {
+		t.Errorf("wrong value: %v", v)
+	}
 
-		v, ok = tc.Pop("nonexistent")
-		if ok {
-			t.Error("ok is true")
-		}
-		if v != nil {
-			t.Errorf("v is not nil")
-		}
-	})
+	v, ok = tc.Pop("nonexistent")
+	if ok {
+		t.Error("ok is true")
+	}
+	if v != nil {
+		t.Errorf("v is not nil")
+	}
 
 	if fmt.Sprintf("%v", onEvict.items) != `[{foo val}]` {
 		t.Errorf("onEvicted: %v", onEvict.items)
 	}
 }
 
+func TestModify(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+
+	tc.Set("k", []string{"x"}, DefaultExpiration)
+	ok := tc.Modify("k", func(v interface{}) interface{} {
+		vv := v.([]string)
+		vv = append(vv, "y")
+		return vv
+	})
+	if !ok {
+		t.Error("ok is false")
+	}
+	v, _ := tc.Get("k")
+	if fmt.Sprintf("%v", v) != `[x y]` {
+		t.Errorf("value wrong: %v", v)
+	}
+
+	ok = tc.Modify("doesntexist", func(v interface{}) interface{} {
+		t.Error("should not be called")
+		return nil
+	})
+	if ok {
+		t.Error("ok is true")
+	}
+
+	tc.Modify("k", func(v interface{}) interface{} { return nil })
+	v, ok = tc.Get("k")
+	if !ok {
+		t.Error("ok not set")
+	}
+	if v != nil {
+		t.Error("v not nil")
+	}
+}
+
 func TestItems(t *testing.T) {
 	tc := New(DefaultExpiration, 1*time.Millisecond)
-	raceTest(tc, func() {
-		tc.Set("foo", "1", DefaultExpiration)
-		tc.Set("bar", "2", DefaultExpiration)
-		tc.Set("baz", "3", DefaultExpiration)
-		tc.Set("exp", "4", 1)
-		time.Sleep(2 * time.Millisecond)
-		if n := tc.ItemCount(); n != 3 {
-			t.Errorf("Item count is not 3: %d", n)
-		}
+	tc.Set("foo", "1", DefaultExpiration)
+	tc.Set("bar", "2", DefaultExpiration)
+	tc.Set("baz", "3", DefaultExpiration)
+	tc.Set("exp", "4", 1)
+	time.Sleep(2 * time.Millisecond)
+	if n := tc.ItemCount(); n != 3 {
+		t.Errorf("Item count is not 3: %d", n)
+	}
 
-		keys := tc.Keys()
-		sort.Strings(keys)
-		if fmt.Sprintf("%v", keys) != "[bar baz foo]" {
-			t.Errorf("%v", keys)
-		}
+	keys := tc.Keys()
+	sort.Strings(keys)
+	if fmt.Sprintf("%v", keys) != "[bar baz foo]" {
+		t.Errorf("%v", keys)
+	}
 
-		want := map[string]Item{
-			"foo": Item{Object: "1"},
-			"bar": Item{Object: "2"},
-			"baz": Item{Object: "3"},
-		}
-		if !reflect.DeepEqual(tc.Items(), want) {
-			t.Errorf("%v", tc.Items())
-		}
-	})
+	want := map[string]Item{
+		"foo": Item{Object: "1"},
+		"bar": Item{Object: "2"},
+		"baz": Item{Object: "3"},
+	}
+	if !reflect.DeepEqual(tc.Items(), want) {
+		t.Errorf("%v", tc.Items())
+	}
 }
 
 func TestFlush(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	raceTest(tc, func() {
-		tc.Set("foo", "bar", DefaultExpiration)
-		tc.Set("baz", "yes", DefaultExpiration)
-		tc.Flush()
-		v, found := tc.Get("foo")
-		if found {
-			t.Error("foo was found, but it should have been deleted")
-		}
-		if v != nil {
-			t.Error("v is not nil:", v)
-		}
-		v, found = tc.Get("baz")
-		if found {
-			t.Error("baz was found, but it should have been deleted")
-		}
-		if v != nil {
-			t.Error("v is not nil:", v)
-		}
-	})
+	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Set("baz", "yes", DefaultExpiration)
+	tc.Flush()
+	v, found := tc.Get("foo")
+	if found {
+		t.Error("foo was found, but it should have been deleted")
+	}
+	if v != nil {
+		t.Error("v is not nil:", v)
+	}
+	v, found = tc.Get("baz")
+	if found {
+		t.Error("baz was found, but it should have been deleted")
+	}
+	if v != nil {
+		t.Error("v is not nil:", v)
+	}
 }

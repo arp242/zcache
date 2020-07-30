@@ -48,24 +48,15 @@ or issue that was reported should be resolved.
   about the best API.
 
 - https://github.com/patrickmn/go-cache/issues/118
+  https://github.com/patrickmn/go-cache/pull/97
 
-  Add as Modify()? Could maybe also change expiry with that?
-
-  cache.Modify("key", func(x interface{}) interface{} {
-        x = x.(map[string]string)
-        x["foo"] = "qwe"
-        return x
-       // Do stuff while it's locked.
-  })
+  Both of these issues are essentially the same: the ability to atomically
+  modify existing values. Instead of adding a []string-specific implementation a
+  generic Modify() seems better to me, so add that.
 
 - https://github.com/patrickmn/go-cache/pull/77
 
   Added as Pop()
-
-- TODO
-  https://github.com/patrickmn/go-cache/pull/97
-
-  This is probably useful; think a bit about the API.
 
 
 Not included

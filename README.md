@@ -28,6 +28,7 @@ included; in short:
 - Add `Touch()` to update the expiry on an item.
 - Add `GetStale()` to get items even after they've expired.
 - Add `Pop()` to update the expiry on an item.
+- Add `Modify()` to atomically modify existing cache entries (e.g. lists, maps).
 
 
 Usage
