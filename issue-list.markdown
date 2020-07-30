@@ -39,13 +39,36 @@ or issue that was reported should be resolved.
   All of them are essentially the same issue: do something with all keys. Added
   a `Keys()` method to return an (unsorted) list of keys.
 
-- TODO
-  https://github.com/patrickmn/go-cache/pull/106
+- https://github.com/patrickmn/go-cache/pull/106
   https://github.com/patrickmn/go-cache/pull/113
   https://github.com/patrickmn/go-cache/pull/117
 
-  These all address the same problem: populate data on a cache Get(); think
-  about the best API.
+  These all address the same problem: populate data on a cache Get() miss.
+
+  The problem with a `GetOrSet(set func())`-type method is that the map will be
+  locked while the `set` callback is running. This could be fixed by unlocking
+  the map, but then it's no longer atomic and you need to be very careful to not
+  spawn several `GetOrSet()`s (basically, it doesn't necessarily make things
+  more convenient). Since a cache is useful for getting expensive-to-get data
+  this seems like it could be a realistic problem.
+
+  This is also the problem with an `OnMiss()` callback: you run the risk of
+  spawning a bucketload of OnMiss() callbacks. I also don't especially care much
+  for the UX of such a callback, since it's kind of a "action at a distance"
+  thing.
+  
+  This could be solved with [`zsync.Once`](https://github.com/zgoat/zstd/blob/master/zsync/once.go#L6) though,
+  then only subsequent GetOrSet calls will block. The downside is that is that
+  keys may still be modified with Set() and other functions while this is
+  running. I'm not sure if that's a big enough of an issue.
+
+  I'm not entirely sure what the value of a simple `GetOrSet(k string,
+  valueIfNotSet interface{})` is. If you already have the value, then why do you
+  need this? You can just set it (or indeed, if you already have the value then
+  why do you need a cache at all?)
+
+  I added the `GetOrSet()` with zsync.Once variant for now, but I'm not 100%
+  sold on this and this may change.
 
 - https://github.com/patrickmn/go-cache/issues/118
   https://github.com/patrickmn/go-cache/pull/97

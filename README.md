@@ -1,7 +1,7 @@
-zcache is an in-memory key:value store/cache similar to memcached and is
+zcache is an in-memory key:value store/cache similar to memcached. It is
 suitable for applications running on a single machine. Its major advantage is
-that, being essentially a thread-safe `map[string]interface{}` with expiration
-times, it doesn't need to serialize or transmit its contents over the network.
+that it's essentially a thread-safe `map[string]interface{}` with expiration
+times and doesn't need to serialize or transmit its contents over the network.
 
 Any object can be stored, for a given duration or forever, and the cache can be
 safely used by multiple goroutines.
@@ -9,7 +9,8 @@ safely used by multiple goroutines.
 Although zcache isn't meant to be used as a persistent datastore, the entire
 cache can be saved to and loaded from a file (using `c.Items()` to retrieve the
 items map to serialize, and `NewFrom()` to create a cache from a deserialized
-one) to recover from downtime quickly. (See the docs for `NewFrom()` for caveats.)
+one) to recover from downtime quickly. (See the docs for `NewFrom()` for
+caveats.)
 
 The canonical import path is `zgo.at/zcache`, and reference docs are at
 https://pkg.go.dev/zgo.at/zcache
@@ -20,15 +21,20 @@ This is a fork of https://github.com/patrickmn/go-cache – which no longer seem
 actively maintained. v1 is intended to be 100% compatible and a drop-in
 replacement.
 
-See [issues.markdown][/issues.markdown] for a complete list of what was
-included; in short:
+See [issue-list.markdown](/issue-list.markdown) for a complete run-down of the
+PRs/issues for go-cache and what was and wasn't included; in short:
 
-- Various small internal improvement.
+- Add `GetOrSet()` to set and return a value if a key doesn't exist yet.
 - Add `Keys()` to list all keys
 - Add `Touch()` to update the expiry on an item.
 - Add `GetStale()` to get items even after they've expired.
-- Add `Pop()` to update the expiry on an item.
+- Add `Pop()` to get an item and delete it.
 - Add `Modify()` to atomically modify existing cache entries (e.g. lists, maps).
+- Various small internal and documentation improvements.
+
+NOTE: there is no "v1" release yet, and the API or semantics may still change
+based on feedback; in particular, the `GetOrSet()` method is rather tricky (see
+comments in the issue-list.markdown file).
 
 
 Usage
