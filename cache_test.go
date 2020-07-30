@@ -10,6 +10,44 @@ import (
 	"time"
 )
 
+func wantKeys(t *testing.T, tc *Cache, want []string, dontWant []string) {
+	t.Helper()
+
+	for _, k := range want {
+		_, ok := tc.Get(k)
+		if !ok {
+			t.Errorf("key not found: %q", k)
+		}
+	}
+
+	for _, k := range dontWant {
+		v, ok := tc.Get(k)
+		if ok {
+			t.Errorf("key %q found with value %v", k, v)
+		}
+		if v != nil {
+			t.Error("v is not nil:", v)
+		}
+	}
+}
+
+func raceTest(tc *Cache, f func()) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 10; i++ {
+			tc.SetDefault("race", "race")
+			tc.Delete("race")
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		f()
+	}()
+	wg.Wait()
+}
+
 type TestStruct struct {
 	Num      int
 	Children []*TestStruct
@@ -1139,14 +1177,32 @@ func TestReplace(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
-	tc.Delete("foo")
-	x, found := tc.Get("foo")
-	if found {
-		t.Error("foo was found, but it should have been deleted")
-	}
-	if x != nil {
-		t.Error("x is not nil:", x)
+
+	raceTest(tc, func() {
+		tc.Set("foo", "bar", DefaultExpiration)
+		tc.Delete("foo")
+		wantKeys(t, tc, []string{}, []string{"foo"})
+	})
+}
+
+func TestDeleteFunc(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+
+	raceTest(tc, func() {
+		tc.SetDefault("aaa", "bar")
+		tc.SetDefault("bbb", "bar")
+		tc.SetDefault("abc", "bar")
+		tc.DeleteFunc(func(k string) (del bool, stop bool) {
+			del = k[0] == 'a'
+			return
+		})
+		wantKeys(t, tc, []string{"bbb"}, []string{"aaa", "abc"})
+	})
+}
+
+func Benchmark(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
 	}
 }
 

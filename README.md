@@ -19,6 +19,13 @@ https://pkg.go.dev/zgo.at/zcache
 This is a fork of https://github.com/patrickmn/go-cache – which no longer seems
 actively maintained. v1 will remain 100% compatible.
 
+Included changes:
+
+- Various small internal improvement.
+
+- Add `DeleteFunc()` to delete keys by callback.
+
+
 ### Usage
 
 ```go

@@ -285,6 +285,34 @@ func (c *cache) Delete(k string) {
 	}
 }
 
+// DeleteFunc iterates over all the keys until the stop return is true, and
+// deletes all keys for which the del argument is true.
+//
+// This will lock the cache while it's running.
+func (c *cache) DeleteFunc(f func(key string) (del bool, stop bool)) {
+	c.mu.RLock()
+	keys := make([]string, 0, len(c.items))
+	for k := range c.items {
+		keys = append(keys, k)
+	}
+	c.mu.RUnlock()
+
+	for _, k := range keys {
+		del, stop := f(k)
+		if del {
+			c.mu.Lock()
+			v, evicted := c.delete(k)
+			c.mu.Unlock()
+			if evicted {
+				c.onEvicted(k, v)
+			}
+		}
+		if stop {
+			break
+		}
+	}
+}
+
 func (c *cache) delete(k string) (interface{}, bool) {
 	if c.onEvicted != nil {
 		if v, found := c.items[k]; found {
@@ -503,8 +531,7 @@ func newCacheWithJanitor(de time.Duration, ci time.Duration, m map[string]Item) 
 // manually. If the cleanup interval is less than one, expired items are not
 // deleted from the cache before calling c.DeleteExpired().
 func New(defaultExpiration, cleanupInterval time.Duration) *Cache {
-	items := make(map[string]Item)
-	return newCacheWithJanitor(defaultExpiration, cleanupInterval, items)
+	return newCacheWithJanitor(defaultExpiration, cleanupInterval, make(map[string]Item))
 }
 
 // Return a new cache with a given default expiration duration and cleanup
