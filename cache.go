@@ -584,10 +584,19 @@ func (c *cache) ItemCount() int {
 }
 
 // Flush deletes all items from the cache.
-func (c *cache) Flush() {
+func (c *cache) Flush() map[string]Item {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	items := c.items
 	c.items = map[string]Item{}
+	c.mu.Unlock()
+
+	if c.onEvicted != nil {
+		for k, v := range items {
+			c.onEvicted(k, v)
+		}
+	}
+
+	return items
 }
 
 type janitor struct {
