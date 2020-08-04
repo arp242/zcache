@@ -583,11 +583,52 @@ func (c *cache) ItemCount() int {
 	return len(c.items)
 }
 
-// Flush deletes all items from the cache.
-func (c *cache) Flush() {
+// Flush deletes all items from the cache and returns them.
+func (c *cache) Flush() map[string]Item {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	items := c.items
 	c.items = map[string]Item{}
+	c.mu.Unlock()
+
+	if c.onEvicted != nil {
+		for k, v := range items {
+			c.onEvicted(k, v.Object)
+		}
+	}
+
+	return items
+}
+
+// Filter is the function definition of FlushWithFilter method parameter
+type Filter func(key string, val interface{}) bool
+
+// FlushWithFilter returns filtered items from the cache.
+// If 'fn' call for an item returns true it is deleted from cache and returned.
+func (c *cache) FlushWithFilter(fn Filter) map[string]Item {
+	c.mu.Lock()
+	m := map[string]Item{}
+	for k, v := range c.items {
+		if !fn(k, v.Object) {
+			continue
+		}
+
+		m[k] = Item{
+			Object:     v.Object,
+			Expiration: v.Expiration,
+		}
+
+		c.delete(k)
+	}
+
+	c.mu.Unlock()
+
+	if c.onEvicted != nil {
+		for k, v := range m {
+			c.onEvicted(k, v.Object)
+		}
+	}
+
+	return m
 }
 
 type janitor struct {
