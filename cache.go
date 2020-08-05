@@ -602,7 +602,7 @@ func (c *cache) Flush() map[string]Item {
 // Filter is the function definition of FlushWithFilter method parameter
 type Filter func(key string, val interface{}) bool
 
-// FlushWithFilter returns filtered items from the cache.
+// FlushWithFilter deletes and returns filtered items from the cache.
 // If 'fn' call for an item returns true it is deleted from cache and returned.
 func (c *cache) FlushWithFilter(fn Filter) map[string]Item {
 	c.mu.Lock()
