@@ -583,7 +583,9 @@ func (c *cache) ItemCount() int {
 	return len(c.items)
 }
 
-// Flush deletes all items from the cache.
+// Flush deletes all items from the cache without calling onEvicted.
+//
+// This is a way to reset the cache to its original state.
 func (c *cache) Flush() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
