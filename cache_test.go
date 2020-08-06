@@ -690,7 +690,7 @@ func TestFlush(t *testing.T) {
 	}
 }
 
-func TestFlushOnEvicted(t *testing.T) {
+func TestDeleteAll(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	tc.Set("foo", 3, DefaultExpiration)
 	if tc.onEvicted != nil {
@@ -702,30 +702,48 @@ func TestFlushOnEvicted(t *testing.T) {
 			works = true
 		}
 	})
-	tc.Flush()
+	tc.DeleteAll()
 	if !works {
 		t.Error("works bool not true")
 	}
 }
 
-func TestFlushWithFilterOnEvicted(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+func TestDeleteFunc(t *testing.T) {
+	tc := New(NoExpiration, 0)
 	tc.Set("foo", 3, DefaultExpiration)
 	tc.Set("bar", 4, DefaultExpiration)
-	if tc.onEvicted != nil {
-		t.Fatal("tc.onEvicted is not nil")
-	}
+
 	works := false
 	tc.OnEvicted(func(k string, v interface{}) {
 		if k == "foo" && v.(int) == 3 {
 			works = true
 		}
 	})
-	tc.FlushWithFilter(func(k string, v interface{}) bool {
-		return k == "foo" && v.(int) == 3
+
+	tc.DeleteFunc(func(k string, v Item) (bool, bool) {
+		return k == "foo" && v.Object.(int) == 3, false
 	})
+
 	if !works {
-		t.Error("works bool not true")
+		t.Error("onEvicted isn't called for 'foo'")
+	}
+
+	_, found := tc.Get("bar")
+	if !found {
+		t.Error("bar shouldn't be removed from the cache")
+	}
+
+	tc.Set("boo", 5, DefaultExpiration)
+
+	count := tc.ItemCount()
+
+	// Only one item should be deleted here
+	tc.DeleteFunc(func(k string, v Item) (bool, bool) {
+		return true, true
+	})
+
+	if tc.ItemCount() != count-1 {
+		t.Errorf("unexpected number of items in the cache. item count expected %d, found %d", count-1, tc.ItemCount())
 	}
 }
 
