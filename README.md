@@ -30,6 +30,8 @@ PRs/issues for go-cache and what was and wasn't included; in short:
 - Add `GetStale()` to get items even after they've expired.
 - Add `Pop()` to get an item and delete it.
 - Add `Modify()` to atomically modify existing cache entries (e.g. lists, maps).
+- Add `DeleteAll()` to remove all items from the cache with onEvicted call.
+- Add `DeleteFunc()` to remove specific items from the cache atomically.
 - Various small internal and documentation improvements.
 
 NOTE: there is no "v1" release yet, and the API or semantics may still change

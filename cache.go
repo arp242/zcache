@@ -592,6 +592,62 @@ func (c *cache) Flush() {
 	c.items = map[string]Item{}
 }
 
+// DeleteAll deletes all items from the cache and returns them.
+// Note that onEvicted is called on returned items.
+func (c *cache) DeleteAll() map[string]Item {
+	c.mu.Lock()
+	items := c.items
+	c.items = map[string]Item{}
+	c.mu.Unlock()
+
+	if c.onEvicted != nil {
+		for k, v := range items {
+			c.onEvicted(k, v.Object)
+		}
+	}
+
+	return items
+}
+
+// Filter is the function definition of the DeleteFunc method parameter.
+// See DeleteFunc for more information.
+type Filter func(key string, item Item) (del bool, stop bool)
+
+// DeleteFunc deletes and returns filtered items from the cache.
+// If `del` is true for `fn` call for an item, the item is deleted from the cache and returned.
+// And if `stop` is returned as true, the filter won't be applied to the rest of the items in the cache.
+// Note that onEvicted is called on returned items.
+func (c *cache) DeleteFunc(fn Filter) map[string]Item {
+	c.mu.Lock()
+	m := map[string]Item{}
+	for k, v := range c.items {
+		del, stop := fn(k, v)
+
+		if del {
+			m[k] = Item{
+				Object:     v.Object,
+				Expiration: v.Expiration,
+			}
+
+			c.delete(k)
+		}
+
+		if stop {
+			break
+		}
+	}
+
+	c.mu.Unlock()
+
+	if c.onEvicted != nil {
+		for k, v := range m {
+			c.onEvicted(k, v.Object)
+		}
+	}
+
+	return m
+}
+
 type janitor struct {
 	Interval time.Duration
 	stop     chan bool

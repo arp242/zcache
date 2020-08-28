@@ -130,11 +130,11 @@ func TestCacheTimes(t *testing.T) {
 
 func TestNewFrom(t *testing.T) {
 	m := map[string]Item{
-		"a": Item{
+		"a": {
 			Object:     1,
 			Expiration: 0,
 		},
-		"b": Item{
+		"b": {
 			Object:     2,
 			Expiration: 0,
 		},
@@ -219,14 +219,14 @@ func testFillAndSerialize(t *testing.T, tc *Cache) {
 		{Num: 3},
 	}, DefaultExpiration)
 	tc.Set("[]*struct", []*TestStruct{
-		&TestStruct{Num: 4},
-		&TestStruct{Num: 5},
+		{Num: 4},
+		{Num: 5},
 	}, DefaultExpiration)
 	tc.Set("structception", &TestStruct{
 		Num: 42,
 		Children: []*TestStruct{
-			&TestStruct{Num: 6174},
-			&TestStruct{Num: 4716},
+			{Num: 6174},
+			{Num: 4716},
 		},
 	}, DefaultExpiration)
 
@@ -660,9 +660,9 @@ func TestItems(t *testing.T) {
 	}
 
 	want := map[string]Item{
-		"foo": Item{Object: "1"},
-		"bar": Item{Object: "2"},
-		"baz": Item{Object: "3"},
+		"foo": {Object: "1"},
+		"bar": {Object: "2"},
+		"baz": {Object: "3"},
 	}
 	if !reflect.DeepEqual(tc.Items(), want) {
 		t.Errorf("%v", tc.Items())
@@ -687,6 +687,63 @@ func TestFlush(t *testing.T) {
 	}
 	if v != nil {
 		t.Error("v is not nil:", v)
+	}
+}
+
+func TestDeleteAll(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	tc.Set("foo", 3, DefaultExpiration)
+	if tc.onEvicted != nil {
+		t.Fatal("tc.onEvicted is not nil")
+	}
+	works := false
+	tc.OnEvicted(func(k string, v interface{}) {
+		if k == "foo" && v.(int) == 3 {
+			works = true
+		}
+	})
+	tc.DeleteAll()
+	if !works {
+		t.Error("works bool not true")
+	}
+}
+
+func TestDeleteFunc(t *testing.T) {
+	tc := New(NoExpiration, 0)
+	tc.Set("foo", 3, DefaultExpiration)
+	tc.Set("bar", 4, DefaultExpiration)
+
+	works := false
+	tc.OnEvicted(func(k string, v interface{}) {
+		if k == "foo" && v.(int) == 3 {
+			works = true
+		}
+	})
+
+	tc.DeleteFunc(func(k string, v Item) (bool, bool) {
+		return k == "foo" && v.Object.(int) == 3, false
+	})
+
+	if !works {
+		t.Error("onEvicted isn't called for 'foo'")
+	}
+
+	_, found := tc.Get("bar")
+	if !found {
+		t.Error("bar shouldn't be removed from the cache")
+	}
+
+	tc.Set("boo", 5, DefaultExpiration)
+
+	count := tc.ItemCount()
+
+	// Only one item should be deleted here
+	tc.DeleteFunc(func(k string, v Item) (bool, bool) {
+		return true, true
+	})
+
+	if tc.ItemCount() != count-1 {
+		t.Errorf("unexpected number of items in the cache. item count expected %d, found %d", count-1, tc.ItemCount())
 	}
 }
 
