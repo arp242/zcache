@@ -1,6 +1,7 @@
-zcache is an in-memory key:value store/cache similar to memcached. It is
-suitable for applications running on a single machine. Its major advantage is
-that it's essentially a thread-safe `map[string]interface{}` with expiration
+zcache is an in-memory key:value store/cache with time-based evictions.
+
+It is suitable for applications running on a single machine. Its major advantage
+is that it's essentially a thread-safe `map[string]interface{}` with expiration
 times and doesn't need to serialize or transmit its contents over the network.
 
 Any object can be stored, for a given duration or forever, and the cache can be
@@ -24,7 +25,6 @@ replacement.
 See [issue-list.markdown](/issue-list.markdown) for a complete run-down of the
 PRs/issues for go-cache and what was and wasn't included; in short:
 
-- Add `GetOrSet()` to set and return a value if a key doesn't exist yet.
 - Add `Keys()` to list all keys
 - Add `Touch()` to update the expiry on an item.
 - Add `GetStale()` to get items even after they've expired.
@@ -33,10 +33,6 @@ PRs/issues for go-cache and what was and wasn't included; in short:
 - Add `DeleteAll()` to remove all items from the cache with onEvicted call.
 - Add `DeleteFunc()` to remove specific items from the cache atomically.
 - Various small internal and documentation improvements.
-
-NOTE: there is no "v1" release yet, and the API or semantics may still change
-based on feedback; in particular, the `GetOrSet()` method is rather tricky (see
-comments in the issue-list.markdown file).
 
 
 Usage

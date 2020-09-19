@@ -157,48 +157,6 @@ func (c *cache) Get(k string) (interface{}, bool) {
 	return item.Object, true
 }
 
-var getOrSetOnce once
-
-// GetOrSet attempts to get a cache key, and will populate it with the return
-// value of f if it's not yet set.
-//
-// This call will block while f() is running, as will all subsequent calls to
-// GetOrSet() for the same key (but not other functions, such as Get()). The
-// cache is not locked while f() is running.
-func (c *cache) GetOrSet(k string, f func() (interface{}, time.Duration)) interface{} {
-	c.mu.RLock()
-	item, ok := c.items[k]
-	c.mu.RUnlock()
-
-	if !ok || item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
-		ran := getOrSetOnce.Do(k, func() {
-			// TODO: what if a Set() call modifies the key in-between the first
-			// GetOrSet() setting it, and the 2nd GetOrSet() getting the value?
-			v, d := f()
-			c.mu.Lock()
-			c.set(k, v, d)
-			c.mu.Unlock()
-			item.Object = v
-		})
-		if ran {
-			// TODO: because this is checked after the lock in Do(), resetting
-			// the key here will cause it to run again. Should think of a better
-			// way to do this in once.
-			// Note this breaks "go test -count=2".
-			go func() {
-				time.Sleep(5 * time.Millisecond)
-				getOrSetOnce.Forget(k)
-			}()
-		} else {
-			c.mu.RLock()
-			item, _ = c.items[k]
-			c.mu.RUnlock()
-		}
-	}
-
-	return item.Object
-}
-
 // GetStale gets an item from the cache without checking if it's expired.
 //
 // Returns the item or nil, a bool indicating that the item is expired, and a

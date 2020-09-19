@@ -39,6 +39,24 @@ or issue that was reported should be resolved.
   All of them are essentially the same issue: do something with all keys. Added
   a `Keys()` method to return an (unsorted) list of keys.
 
+- [Add Map function (Read/Replace) in single lock](https://github.com/patrickmn/go-cache/issues/118)<br>
+  [added atomic list-append operation by sgeisbacher](https://github.com/patrickmn/go-cache/pull/97)
+
+  Both of these issues are essentially the same: the ability to atomically
+  modify existing values. Instead of adding a []string-specific implementation a
+  generic Modify() seems better to me, so add that.
+
+- [Add remove method, if key exists, delete and return elements by yinbaoqiang](https://github.com/patrickmn/go-cache/pull/77)<br>
+
+  Added as Pop()
+
+
+Not included
+------------
+
+Issues and PRs that were *not* included with a short explanation why. You can
+open an issue if you feel I made a mistake and we can look at it again :-)
+
 - [Add OnMissing callback by adregner](https://github.com/patrickmn/go-cache/pull/106)<br>
   [Add Memoize by clitetailor](https://github.com/patrickmn/go-cache/pull/113)<br>
   [GetOrSet method to handle case for atomic get and set if not exists by technicianted](https://github.com/patrickmn/go-cache/pull/117)
@@ -67,26 +85,7 @@ or issue that was reported should be resolved.
   need this? You can just set it (or indeed, if you already have the value then
   why do you need a cache at all?)
 
-  I added the `GetOrSet()` with zsync.Once variant for now, but I'm not 100%
-  sold on this and this may change.
-
-- [Add Map function (Read/Replace) in single lock](https://github.com/patrickmn/go-cache/issues/118)<br>
-  [added atomic list-append operation by sgeisbacher](https://github.com/patrickmn/go-cache/pull/97)
-
-  Both of these issues are essentially the same: the ability to atomically
-  modify existing values. Instead of adding a []string-specific implementation a
-  generic Modify() seems better to me, so add that.
-
-- [Add remove method, if key exists, delete and return elements by yinbaoqiang](https://github.com/patrickmn/go-cache/pull/77)<br>
-
-  Added as Pop()
-
-
-Not included
-------------
-
-Issues and PRs that were *not* included with a short explanation why. You can
-open an issue if you feel I made a mistake and we can look at it again :-)
+  For now, I decided to not add it.
 
 - [what if onEvicted func  very slow](https://github.com/patrickmn/go-cache/issues/49)<br>
 
@@ -164,3 +163,8 @@ open an issue if you feel I made a mistake and we can look at it again :-)
 
   You can already get a list of items with Items(); so not sure what the use
   case is here? Not clear enough to do anything with as it stands.
+
+- [Implemented a faster version of the Size() function](https://github.com/patrickmn/go-cache/pull/129)<br>
+
+  Because this only counts primitives (and not maps, structs, slices) it's very
+  limited. This kind of stuff is out-of-scope for v1 anyway.
