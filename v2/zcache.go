@@ -3,10 +3,7 @@
 package zcache
 
 import (
-	"encoding/gob"
 	"errors"
-	"io"
-	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -418,84 +415,6 @@ func (c *cache) OnEvicted(f func(string, interface{})) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.onEvicted = f
-}
-
-// Save the cache's items (using Gob) to an io.Writer.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) Save(w io.Writer) (err error) {
-	enc := gob.NewEncoder(w)
-	defer func() {
-		if rec := recover(); rec != nil {
-			err = errors.New("zcache.Save: error registering item types with Gob library")
-		}
-	}()
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	for _, v := range c.items {
-		gob.Register(v.Object)
-	}
-	err = enc.Encode(&c.items)
-	return
-}
-
-// SaveFile writes the cache's items to the given filename, creating the file if
-// it doesn't exist, and overwriting it if it does.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) SaveFile(fname string) error {
-	fp, err := os.Create(fname)
-	if err != nil {
-		return err
-	}
-	err = c.Save(fp)
-	if err != nil {
-		fp.Close()
-		return err
-	}
-	return fp.Close()
-}
-
-// Load (Gob-serialized) cache items from an io.Reader, excluding any items with
-// keys that already exist (and haven't expired) in the current cache.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) Load(r io.Reader) error {
-	dec := gob.NewDecoder(r)
-	items := map[string]Item{}
-	err := dec.Decode(&items)
-	if err == nil {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		for k, v := range items {
-			ov, ok := c.items[k]
-			if !ok || ov.Expired() {
-				c.items[k] = v
-			}
-		}
-	}
-	return err
-}
-
-// LoadFile reads cache items from the given filename, excluding any items with
-// keys that already exist in the current cache.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) LoadFile(fname string) error {
-	fp, err := os.Open(fname)
-	if err != nil {
-		return err
-	}
-	err = c.Load(fp)
-	if err != nil {
-		fp.Close()
-		return err
-	}
-	return fp.Close()
 }
 
 // Items returns a copy of all unexpired items in the cache.
