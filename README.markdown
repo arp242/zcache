@@ -25,7 +25,7 @@ replacement.
 See [issue-list.markdown](/issue-list.markdown) for a complete run-down of the
 PRs/issues for go-cache and what was and wasn't included; in short:
 
-- Add `Keys()` to list all keys
+- Add `Keys()` to list all keys.
 - Add `Touch()` to update the expiry on an item.
 - Add `GetStale()` to get items even after they've expired.
 - Add `Pop()` to get an item and delete it.
@@ -39,6 +39,8 @@ Usage
 -----
 
 ```go
+package main
+
 import (
     "fmt"
     "time"

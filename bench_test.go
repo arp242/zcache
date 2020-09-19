@@ -47,42 +47,12 @@ func benchmarkSet(b *testing.B, exp time.Duration) {
 	}
 }
 
-func benchmarkGetManyConcurrent(b *testing.B, exp time.Duration) {
-	// This is the same as BenchmarkCacheGetConcurrent, but its result
-	// can be compared against BenchmarkShardedCacheGetManyConcurrent
-	// in sharded_test.go.
-	b.StopTimer()
-	n := 10000
-	tc := New(exp, 0)
-	keys := make([]string, n)
-	for i := 0; i < n; i++ {
-		k := "foo" + strconv.Itoa(i)
-		keys[i] = k
-		tc.Set(k, "bar", DefaultExpiration)
-	}
-	each := b.N / n
-	wg := new(sync.WaitGroup)
-	wg.Add(n)
-	for _, v := range keys {
-		go func(k string) {
-			for j := 0; j < each; j++ {
-				tc.Get(k)
-			}
-			wg.Done()
-		}(v)
-	}
-	b.StartTimer()
-	wg.Wait()
-}
-
-func BenchmarkGetExpiring(b *testing.B)                  { benchmarkGet(b, 5*time.Minute) }
-func BenchmarkGetNotExpiring(b *testing.B)               { benchmarkGet(b, NoExpiration) }
-func BenchmarkGetConcurrentExpiring(b *testing.B)        { benchmarkGetConcurrent(b, 5*time.Minute) }
-func BenchmarkGetConcurrentNotExpiring(b *testing.B)     { benchmarkGetConcurrent(b, NoExpiration) }
-func BenchmarkSetExpiring(b *testing.B)                  { benchmarkSet(b, 5*time.Minute) }
-func BenchmarkSetNotExpiring(b *testing.B)               { benchmarkSet(b, NoExpiration) }
-func BenchmarkGetManyConcurrentExpiring(b *testing.B)    { benchmarkGetManyConcurrent(b, 5*time.Minute) }
-func BenchmarkGetManyConcurrentNotExpiring(b *testing.B) { benchmarkGetManyConcurrent(b, NoExpiration) }
+func BenchmarkGetExpiring(b *testing.B)              { benchmarkGet(b, 5*time.Minute) }
+func BenchmarkGetNotExpiring(b *testing.B)           { benchmarkGet(b, NoExpiration) }
+func BenchmarkGetConcurrentExpiring(b *testing.B)    { benchmarkGetConcurrent(b, 5*time.Minute) }
+func BenchmarkGetConcurrentNotExpiring(b *testing.B) { benchmarkGetConcurrent(b, NoExpiration) }
+func BenchmarkSetExpiring(b *testing.B)              { benchmarkSet(b, 5*time.Minute) }
+func BenchmarkSetNotExpiring(b *testing.B)           { benchmarkSet(b, NoExpiration) }
 
 func BenchmarkRWMutexMapGet(b *testing.B) {
 	b.StopTimer()
@@ -210,6 +180,16 @@ func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
 		m["foo"] = "bar"
 		delete(m, "foo")
 		mu.Unlock()
+	}
+}
+
+func BenchmarkIncrement(b *testing.B) {
+	b.StopTimer()
+	tc := New(DefaultExpiration, 0)
+	tc.Set("foo", 0, DefaultExpiration)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		tc.Increment("foo", 1)
 	}
 }
 

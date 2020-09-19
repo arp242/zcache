@@ -551,6 +551,7 @@ func (c *cache) Flush() {
 }
 
 // DeleteAll deletes all items from the cache and returns them.
+//
 // Note that onEvicted is called on returned items.
 func (c *cache) DeleteAll() map[string]Item {
 	c.mu.Lock()
@@ -568,33 +569,30 @@ func (c *cache) DeleteAll() map[string]Item {
 }
 
 // Filter is the function definition of the DeleteFunc method parameter.
-// See DeleteFunc for more information.
 type Filter func(key string, item Item) (del bool, stop bool)
 
 // DeleteFunc deletes and returns filtered items from the cache.
-// If `del` is true for `fn` call for an item, the item is deleted from the cache and returned.
-// And if `stop` is returned as true, the filter won't be applied to the rest of the items in the cache.
-// Note that onEvicted is called on returned items.
+//
+// The item will be deleted if the callback's first return argument is true.
+// All deleted items are passed to onEvict and are returned.
+//
+// The loop will stop if the second return argument is true.
 func (c *cache) DeleteFunc(fn Filter) map[string]Item {
 	c.mu.Lock()
 	m := map[string]Item{}
 	for k, v := range c.items {
 		del, stop := fn(k, v)
-
 		if del {
 			m[k] = Item{
 				Object:     v.Object,
 				Expiration: v.Expiration,
 			}
-
 			c.delete(k)
 		}
-
 		if stop {
 			break
 		}
 	}
-
 	c.mu.Unlock()
 
 	if c.onEvicted != nil {
