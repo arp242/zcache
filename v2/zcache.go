@@ -46,11 +46,36 @@ type cache struct {
 	janitor           *janitor
 }
 
-// Set a cache item, replacing any existing item.
+// Set a cache item, replacing any existing item, with the default expiration.
+func (c *cache) Set(k string, v interface{}) {
+	c.SetWithExpire(k, v, DefaultExpiration)
+}
+
+// Touch replaces the expiry of a key with the default expiration and returns
+// the current value, if any.
+func (c *cache) Touch(k string) (interface{}, bool) {
+	return c.TouchWithExpire(k, DefaultExpiration)
+}
+
+// Add an item to the cache with the default expiration only if it doesn't exist
+// yet, or if it has expired. It will return an error if the cache key exists.
+func (c *cache) Add(k string, v interface{}) error {
+	return c.AddWithExpire(k, v, DefaultExpiration)
+}
+
+// Replace sets a new value for the key only if it already exists and isn't
+// expired.
+//
+// It will return an error if the cache key doesn't exist.
+func (c *cache) Replace(k string, v interface{}) error {
+	return c.ReplaceWithExpire(k, v, DefaultExpiration)
+}
+
+// SetWithExpire sets a cache item, replacing any existing item.
 //
 // If the duration is 0 (DefaultExpiration), the cache's default expiration time
 // is used. If it is -1 (NoExpiration), the item never expires.
-func (c *cache) Set(k string, v interface{}, d time.Duration) {
+func (c *cache) SetWithExpire(k string, v interface{}, d time.Duration) {
 	// "Inlining" of set
 	var e int64
 	if d == DefaultExpiration {
@@ -67,13 +92,8 @@ func (c *cache) Set(k string, v interface{}, d time.Duration) {
 	}
 }
 
-// SetDefault calls Set() with the default expiration for this cache.
-func (c *cache) SetDefault(k string, v interface{}) {
-	c.Set(k, v, DefaultExpiration)
-}
-
-// Touch replaces the expiry of a key and returns the current value, if any.
-func (c *cache) Touch(k string, d time.Duration) (interface{}, bool) {
+// TouchWithExpire replaces the expiry of a key and returns the current value, if any.
+func (c *cache) TouchWithExpire(k string, d time.Duration) (interface{}, bool) {
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
 	}
@@ -105,10 +125,9 @@ func (c *cache) set(k string, v interface{}, d time.Duration) {
 	}
 }
 
-// Add an item to the cache only if it doesn't exist yet, or if it has expired.
-//
-// It will return an error if the cache key exists.
-func (c *cache) Add(k string, v interface{}, d time.Duration) error {
+// AddWithExpire adds an item to the cache only if it doesn't exist yet, or if
+// it has expired. It will return an error if the cache key exists.
+func (c *cache) AddWithExpire(k string, v interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -120,11 +139,11 @@ func (c *cache) Add(k string, v interface{}, d time.Duration) error {
 	return nil
 }
 
-// Replace sets a new value for the key only if it already exists and isn't
+// ReplaceWithExpire sets a new value for the key only if it already exists and isn't
 // expired.
 //
 // It will return an error if the cache key doesn't exist.
-func (c *cache) Replace(k string, v interface{}, d time.Duration) error {
+func (c *cache) ReplaceWithExpire(k string, v interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -172,11 +191,11 @@ func (c *cache) GetStale(k string) (v interface{}, expired bool, ok bool) {
 		true
 }
 
-// GetWithExpiration returns an item and its expiration time from the cache.
+// GetWithExpire returns an item and its expiration time from the cache.
 // It returns the item or nil, the expiration time if one is set (if the item
 // never expires a zero value for time.Time is returned), and a bool indicating
 // whether the key was found.
-func (c *cache) GetWithExpiration(k string) (interface{}, time.Time, bool) {
+func (c *cache) GetWithExpire(k string) (interface{}, time.Time, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 

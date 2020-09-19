@@ -53,9 +53,9 @@ func TestCache(t *testing.T) {
 		t.Error("Getting C found value that shouldn't exist:", c)
 	}
 
-	tc.Set("a", 1, DefaultExpiration)
-	tc.Set("b", "b", DefaultExpiration)
-	tc.Set("c", 3.5, DefaultExpiration)
+	tc.Set("a", 1)
+	tc.Set("b", "b")
+	tc.Set("c", 3.5)
 
 	v, found := tc.Get("a")
 	if !found {
@@ -92,10 +92,10 @@ func TestCacheTimes(t *testing.T) {
 	var found bool
 
 	tc := New(50*time.Millisecond, 1*time.Millisecond)
-	tc.Set("a", 1, DefaultExpiration)
-	tc.Set("b", 2, NoExpiration)
-	tc.Set("c", 3, 20*time.Millisecond)
-	tc.Set("d", 4, 70*time.Millisecond)
+	tc.Set("a", 1)
+	tc.SetWithExpire("b", 2, NoExpiration)
+	tc.SetWithExpire("c", 3, 20*time.Millisecond)
+	tc.SetWithExpire("d", 4, 70*time.Millisecond)
 
 	<-time.After(25 * time.Millisecond)
 	_, found = tc.Get("c")
@@ -156,7 +156,7 @@ func TestNewFrom(t *testing.T) {
 
 func TestStorePointerToStruct(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", &TestStruct{Num: 1}, DefaultExpiration)
+	tc.Set("foo", &TestStruct{Num: 1})
 	v, found := tc.Get("foo")
 	if !found {
 		t.Fatal("*TestStruct was not found for foo")
@@ -176,7 +176,7 @@ func TestStorePointerToStruct(t *testing.T) {
 
 func TestOnEvicted(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 3, DefaultExpiration)
+	tc.Set("foo", 3)
 	if tc.onEvicted != nil {
 		t.Fatal("tc.onEvicted is not nil")
 	}
@@ -185,7 +185,7 @@ func TestOnEvicted(t *testing.T) {
 		if k == "foo" && v.(int) == 3 {
 			works = true
 		}
-		tc.Set("bar", 4, DefaultExpiration)
+		tc.Set("bar", 4)
 	})
 	tc.Delete("foo")
 	v, _ := tc.Get("bar")
@@ -200,13 +200,13 @@ func TestOnEvicted(t *testing.T) {
 func TestTouch(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	tc.Set("a", "b", 5*time.Second)
-	_, first, _ := tc.GetWithExpiration("a")
-	v, ok := tc.Touch("a", 10*time.Second)
+	tc.SetWithExpire("a", "b", 5*time.Second)
+	_, first, _ := tc.GetWithExpire("a")
+	v, ok := tc.TouchWithExpire("a", 10*time.Second)
 	if !ok {
 		t.Fatal("!ok")
 	}
-	_, second, _ := tc.GetWithExpiration("a")
+	_, second, _ := tc.GetWithExpire("a")
 	if v.(string) != "b" {
 		t.Error("wrong value")
 	}
@@ -216,31 +216,31 @@ func TestTouch(t *testing.T) {
 	}
 }
 
-func TestGetWithExpiration(t *testing.T) {
+func TestGetWithExpire(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	a, expiration, ok := tc.GetWithExpiration("a")
+	a, expiration, ok := tc.GetWithExpire("a")
 	if ok || a != nil || !expiration.IsZero() {
 		t.Error("Getting A found value that shouldn't exist:", a)
 	}
 
-	b, expiration, ok := tc.GetWithExpiration("b")
+	b, expiration, ok := tc.GetWithExpire("b")
 	if ok || b != nil || !expiration.IsZero() {
 		t.Error("Getting B found value that shouldn't exist:", b)
 	}
 
-	c, expiration, ok := tc.GetWithExpiration("c")
+	c, expiration, ok := tc.GetWithExpire("c")
 	if ok || c != nil || !expiration.IsZero() {
 		t.Error("Getting C found value that shouldn't exist:", c)
 	}
 
-	tc.Set("a", 1, DefaultExpiration)
-	tc.Set("b", "b", DefaultExpiration)
-	tc.Set("c", 3.5, DefaultExpiration)
-	tc.Set("d", 1, NoExpiration)
-	tc.Set("e", 1, 50*time.Millisecond)
+	tc.Set("a", 1)
+	tc.Set("b", "b")
+	tc.Set("c", 3.5)
+	tc.SetWithExpire("d", 1, NoExpiration)
+	tc.SetWithExpire("e", 1, 50*time.Millisecond)
 
-	v, expiration, ok := tc.GetWithExpiration("a")
+	v, expiration, ok := tc.GetWithExpire("a")
 	if !ok {
 		t.Error("a was not found while getting a2")
 	}
@@ -253,7 +253,7 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for a is not a zeroed time")
 	}
 
-	v, expiration, ok = tc.GetWithExpiration("b")
+	v, expiration, ok = tc.GetWithExpire("b")
 	if !ok {
 		t.Error("b was not found while getting b2")
 	}
@@ -266,7 +266,7 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for b is not a zeroed time")
 	}
 
-	v, expiration, ok = tc.GetWithExpiration("c")
+	v, expiration, ok = tc.GetWithExpire("c")
 	if !ok {
 		t.Error("c was not found while getting c2")
 	}
@@ -279,7 +279,7 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for c is not a zeroed time")
 	}
 
-	v, expiration, ok = tc.GetWithExpiration("d")
+	v, expiration, ok = tc.GetWithExpire("d")
 	if !ok {
 		t.Error("d was not found while getting d2")
 	}
@@ -292,7 +292,7 @@ func TestGetWithExpiration(t *testing.T) {
 		t.Error("expiration for d is not a zeroed time")
 	}
 
-	v, expiration, ok = tc.GetWithExpiration("e")
+	v, expiration, ok = tc.GetWithExpire("e")
 	if !ok {
 		t.Error("e was not found while getting e2")
 	}
@@ -312,7 +312,7 @@ func TestGetWithExpiration(t *testing.T) {
 func TestGetStale(t *testing.T) {
 	tc := New(5*time.Millisecond, 0)
 
-	tc.SetDefault("x", "y")
+	tc.Set("x", "y")
 
 	v, exp, ok := tc.GetStale("x")
 	if !ok {
@@ -346,11 +346,11 @@ func TestGetStale(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	err := tc.Add("foo", "bar", DefaultExpiration)
+	err := tc.Add("foo", "bar")
 	if err != nil {
 		t.Error("Couldn't add foo even though it shouldn't exist")
 	}
-	err = tc.Add("foo", "baz", DefaultExpiration)
+	err = tc.Add("foo", "baz")
 	if err == nil {
 		t.Error("Successfully added another foo when it should have returned an error")
 	}
@@ -358,12 +358,12 @@ func TestAdd(t *testing.T) {
 
 func TestReplace(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	err := tc.Replace("foo", "bar", DefaultExpiration)
+	err := tc.Replace("foo", "bar")
 	if err == nil {
 		t.Error("Replaced foo when it shouldn't exist")
 	}
-	tc.Set("foo", "bar", DefaultExpiration)
-	err = tc.Replace("foo", "bar", DefaultExpiration)
+	tc.Set("foo", "bar")
+	err = tc.Replace("foo", "bar")
 	if err != nil {
 		t.Error("Couldn't replace existing key foo")
 	}
@@ -372,7 +372,7 @@ func TestReplace(t *testing.T) {
 func TestDelete(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Set("foo", "bar")
 	tc.Delete("foo")
 	wantKeys(t, tc, []string{}, []string{"foo"})
 }
@@ -403,7 +403,7 @@ func TestPop(t *testing.T) {
 	var onEvict onEvictTest
 	tc.OnEvicted(onEvict.add)
 
-	tc.Set("foo", "val", DefaultExpiration)
+	tc.Set("foo", "val")
 
 	v, ok := tc.Pop("foo")
 	wantKeys(t, tc, []string{}, []string{"foo"})
@@ -430,7 +430,7 @@ func TestPop(t *testing.T) {
 func TestModify(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 
-	tc.Set("k", []string{"x"}, DefaultExpiration)
+	tc.Set("k", []string{"x"})
 	ok := tc.Modify("k", func(v interface{}) interface{} {
 		vv := v.([]string)
 		vv = append(vv, "y")
@@ -464,10 +464,10 @@ func TestModify(t *testing.T) {
 
 func TestItems(t *testing.T) {
 	tc := New(DefaultExpiration, 1*time.Millisecond)
-	tc.Set("foo", "1", DefaultExpiration)
-	tc.Set("bar", "2", DefaultExpiration)
-	tc.Set("baz", "3", DefaultExpiration)
-	tc.Set("exp", "4", 1)
+	tc.Set("foo", "1")
+	tc.Set("bar", "2")
+	tc.Set("baz", "3")
+	tc.SetWithExpire("exp", "4", 1)
 	time.Sleep(2 * time.Millisecond)
 	if n := tc.ItemCount(); n != 3 {
 		t.Errorf("Item count is not 3: %d", n)
@@ -491,8 +491,8 @@ func TestItems(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
-	tc.Set("baz", "yes", DefaultExpiration)
+	tc.Set("foo", "bar")
+	tc.Set("baz", "yes")
 	tc.Reset()
 	v, found := tc.Get("foo")
 	if found {
@@ -512,7 +512,7 @@ func TestReset(t *testing.T) {
 
 func TestDeleteAll(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 3, DefaultExpiration)
+	tc.Set("foo", 3)
 	if tc.onEvicted != nil {
 		t.Fatal("tc.onEvicted is not nil")
 	}
@@ -530,8 +530,8 @@ func TestDeleteAll(t *testing.T) {
 
 func TestDeleteFunc(t *testing.T) {
 	tc := New(NoExpiration, 0)
-	tc.Set("foo", 3, DefaultExpiration)
-	tc.Set("bar", 4, DefaultExpiration)
+	tc.Set("foo", 3)
+	tc.Set("bar", 4)
 
 	works := false
 	tc.OnEvicted(func(k string, v interface{}) {
@@ -553,7 +553,7 @@ func TestDeleteFunc(t *testing.T) {
 		t.Error("bar shouldn't be removed from the cache")
 	}
 
-	tc.Set("boo", 5, DefaultExpiration)
+	tc.Set("boo", 5)
 
 	count := tc.ItemCount()
 

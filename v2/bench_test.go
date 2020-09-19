@@ -11,7 +11,7 @@ import (
 func benchmarkGet(b *testing.B, exp time.Duration) {
 	b.StopTimer()
 	tc := New(exp, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Set("foo", "bar")
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.Get("foo")
@@ -21,7 +21,7 @@ func benchmarkGet(b *testing.B, exp time.Duration) {
 func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 	b.StopTimer()
 	tc := New(exp, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Set("foo", "bar")
 	wg := new(sync.WaitGroup)
 	workers := runtime.NumCPU()
 	each := b.N / workers
@@ -43,7 +43,7 @@ func benchmarkSet(b *testing.B, exp time.Duration) {
 	tc := New(exp, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar", DefaultExpiration)
+		tc.Set("foo", "bar")
 	}
 }
 
@@ -138,7 +138,7 @@ func BenchmarkCacheSetDelete(b *testing.B) {
 	tc := New(DefaultExpiration, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar", DefaultExpiration)
+		tc.Set("foo", "bar")
 		tc.Delete("foo")
 	}
 }
@@ -186,7 +186,7 @@ func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
 func BenchmarkIncrement(b *testing.B) {
 	b.StopTimer()
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 0, DefaultExpiration)
+	tc.Set("foo", 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.Increment("foo", 1)
@@ -196,7 +196,7 @@ func BenchmarkIncrement(b *testing.B) {
 func BenchmarkIncrementInt(b *testing.B) {
 	b.StopTimer()
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 0, DefaultExpiration)
+	tc.Set("foo", 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.IncrementInt("foo", 1)
