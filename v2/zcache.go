@@ -1,5 +1,3 @@
-//go:generate sh -c "go run gen.go > incr.go"
-
 package zcache
 
 import (

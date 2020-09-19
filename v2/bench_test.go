@@ -1,6 +1,7 @@
 package zcache
 
 import (
+	"errors"
 	"runtime"
 	"strconv"
 	"sync"
@@ -193,10 +194,43 @@ func BenchmarkIncrement(b *testing.B) {
 	}
 }
 
+type CacheInt Cache
+
+func (c *CacheInt) IncrementInt(k string, n int) (int, error) {
+	var ii int
+	ok := c.Modify(k, func(v interface{}) interface{} {
+		i, ok := v.(int)
+		if !ok {
+			// ??? return err?
+			return nil
+		}
+		ii = i + n
+		return ii
+	})
+	if !ok {
+		return 0, errors.New("oh noes")
+	}
+	return ii, nil
+}
+
+func BenchmarkIncrementInt2(b *testing.B) {
+	b.StopTimer()
+
+	tc := CacheInt(*New(DefaultExpiration, 0))
+	tc.Set("foo", 0)
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		tc.IncrementInt("foo", 1)
+	}
+}
+
 func BenchmarkIncrementInt(b *testing.B) {
 	b.StopTimer()
+
 	tc := New(DefaultExpiration, 0)
 	tc.Set("foo", 0)
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.IncrementInt("foo", 1)
