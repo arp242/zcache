@@ -489,11 +489,11 @@ func TestItems(t *testing.T) {
 	}
 }
 
-func TestFlush(t *testing.T) {
+func TestReset(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	tc.Set("foo", "bar", DefaultExpiration)
 	tc.Set("baz", "yes", DefaultExpiration)
-	tc.Flush()
+	tc.Reset()
 	v, found := tc.Get("foo")
 	if found {
 		t.Error("foo was found, but it should have been deleted")
