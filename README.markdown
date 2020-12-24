@@ -32,6 +32,7 @@ PRs/issues for go-cache and what was and wasn't included; in short:
 - Add `Modify()` to atomically modify existing cache entries (e.g. lists, maps).
 - Add `DeleteAll()` to remove all items from the cache with onEvicted call.
 - Add `DeleteFunc()` to remove specific items from the cache atomically.
+- Add `Proxy` type, to access cache items under a different key.
 - Various small internal and documentation improvements.
 
 
