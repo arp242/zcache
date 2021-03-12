@@ -19,8 +19,8 @@ type Proxy struct {
 }
 
 // NewProxy creates a new proxied cache.
-func NewProxy(c *Cache) Proxy {
-	return Proxy{cache: c, m: make(map[string]string)}
+func NewProxy(c *Cache) *Proxy {
+	return &Proxy{cache: c, m: make(map[string]string)}
 }
 
 // Proxy items from "proxyKey" to "mainKey".
