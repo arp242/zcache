@@ -1,6 +1,8 @@
 package zcache
 
-import "sync"
+import (
+	"sync"
+)
 
 // Proxy a cache, allowing access to the same cache entries with different keys.
 //
@@ -81,4 +83,16 @@ func (p *Proxy) Get(proxyKey string) (interface{}, bool) {
 	p.mu.RUnlock()
 
 	return p.cache.Get(mainKey)
+}
+
+// Items gets all items in this proxy, as proxyKey → mainKey
+func (p *Proxy) Items() map[string]string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	m := make(map[string]string, len(p.m))
+	for k, v := range p.m {
+		m[k] = v
+	}
+	return m
 }
