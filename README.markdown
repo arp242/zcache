@@ -14,7 +14,7 @@ one) to recover from downtime quickly. (See the docs for `NewFrom()` for
 caveats.)
 
 The canonical import path is `zgo.at/zcache`, and reference docs are at
-https://pkg.go.dev/zgo.at/zcache
+https://godocs.io/zgo.at/zcache
 
 ---
 
