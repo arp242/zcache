@@ -5,41 +5,46 @@ is that it's essentially a thread-safe map with expiration times. Any object can
 be stored, for a given duration or forever, and the cache can be safely used by
 multiple goroutines.
 
-Although zcache isn't meant to be used as a persistent datastore, the entire
-cache can be saved to and loaded from a file (using `c.Items()` to retrieve the
-items map to serialize, and `NewFrom()` to create a cache from a deserialized
-one) to recover from downtime quickly. (See the docs for `NewFrom()` for
-caveats.)
+Although zcache isn't meant to be used as a persistent datastore, the contents
+can be saved to and loaded from a file (using `c.Items()` to retrieve the items
+map to serialize, and `NewFrom()` to create a cache from a deserialized one) to
+recover from downtime quickly.
 
 The canonical import path is `zgo.at/zcache`, and reference docs are at
 https://godocs.io/zgo.at/zcache
 
----
-
+Changes
+-------
 This is a fork of https://github.com/patrickmn/go-cache – which no longer seems
 actively maintained. There are two versions:
 
-- v1 is intended to be 100% compatible with co-cache and a drop-in replacement.
+- v1 is intended to be 100% compatible with co-cache and a drop-in replacement
+  with various enhancements. This uses generics and requires Go 1.18.
 - v2 makes various incompatible changes to the API: various functions calls are
   improved, and it utilized generics.
 
-This README documents v2; see README.v1.md for the v1 README.
+This README documents v2; see README.v1.md for the v1 README. Both versions are
+maintained.
 
-Incompatible changes in v2:
-
-- Use generics instead of `map[string]interface{}`; you can get the same with
-  `zcache.New[string, any](...)`.
+### Incompatible changes in v2
+- Use generics instead of `map[string]interface{}`; you can get the same as
+  before with `zcache.New[string, any](..)`, but if you know you will only
+  store `MyStruct` you can use `zcache.New[string, *MyStruct](..)` for
+  additional type safety.
 
 - Remove `Save()`, `SaveFile()`, `Load()`, `LoadFile()`; you can still persist
   stuff to disk by using `Items()` and `NewFrom()`. These methods were already
   deprecated.
 
-- Rename `Set()` to `SetWithExpire()` and `SetDefault()` takes `Set()`'s place.
+- Rename `Set()` to `SetWithExpire()`, and rename `SetDefault()` to `Set()`.
+  Most of the time you want to use the default expiry time, so make that the
+  easier path.
 
 - Rename `Flush()` to `Reset()`; I think that more clearly conveys what it's
   intended for.
 
-Compatible changes in both v1 and v2:
+### Compatible changes
+All these changes are in both v1 and v2
 
 - Add `Keys()` to list all keys.
 - Add `Touch()` to update the expiry on an item.
@@ -112,7 +117,6 @@ FAQ
 ---
 
 ### How can I limit the size of the cache? Is there an option for this?
-
 Not really; zcache is intended as a thread-safe map with time-based eviction.
 This keeps it nice and simple. Adding something like a LRU eviction mechanism
 not only makes the code more complex, it also makes the library worse for cases
