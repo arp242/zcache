@@ -1,6 +1,7 @@
 package zcache
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -40,6 +41,10 @@ func TestProxy(t *testing.T) {
 	pc.Set("main", "proxy", "vvv")
 	has(pc.Get("proxy"))
 	not(pc.Get("main"))
+
+	if !reflect.DeepEqual(pc.Items(), map[string]string{"proxy": "main"}) {
+		t.Error()
+	}
 
 	if k, ok := pc.Key("adsasdasd"); k != "" || ok != false {
 		t.Error()

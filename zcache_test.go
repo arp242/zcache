@@ -1,8 +1,10 @@
 package zcache
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
+	"runtime"
 	"sort"
 	"sync"
 	"testing"
@@ -585,4 +587,25 @@ func TestItemExpired(t *testing.T) {
 	if items["b"].Expired() {
 		t.Fatal("b expired")
 	}
+}
+
+// Make sure the janitor is stopped after GC frees up.
+func TestFinal(t *testing.T) {
+	has := func() bool {
+		s := make([]byte, 8192)
+		runtime.Stack(s, true)
+		return bytes.Contains(s, []byte("zgo.at/zcache/v2.(*janitor[...]).run"))
+	}
+
+	tc := New[string, any](10*time.Millisecond, 10*time.Millisecond)
+	tc.Set("asd", "zxc")
+
+	if !has() {
+		t.Fatal("no janitor goroutine before GC")
+	}
+	runtime.GC()
+	if has() {
+		t.Fatal("still have janitor goroutine after GC")
+	}
+
 }
