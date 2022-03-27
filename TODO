@@ -1,0 +1,4 @@
+- New[string, any] -> make shortcut?
+
+- Add back Increment and Decrement; I'm not a huge fan of using a separate
+  orderedCache for this.

@@ -1,7 +1,7 @@
 package zcache
 
 import (
-	"errors"
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
@@ -19,45 +19,45 @@ const (
 
 // Item stored in the cache; it holds the value and the expiration time as
 // timestamp.
-type Item struct {
-	Object     interface{}
+type Item[V any] struct {
+	Object     V
 	Expiration int64
 }
 
 // Expired reports if this item has expired.
-func (item Item) Expired() bool {
+func (item Item[V]) Expired() bool {
 	if item.Expiration == 0 {
 		return false
 	}
 	return time.Now().UnixNano() > item.Expiration
 }
 
-type Cache struct {
-	*cache // If this is confusing, see the comment at newCacheWithJanitor()
+type Cache[K comparable, V any] struct {
+	*cache[K, V] // If this is confusing, see the comment at newCacheWithJanitor()
 }
 
-type cache struct {
+type cache[K comparable, V any] struct {
 	defaultExpiration time.Duration
-	items             map[string]Item
+	items             map[K]Item[V]
 	mu                sync.RWMutex
-	onEvicted         func(string, interface{})
-	janitor           *janitor
+	onEvicted         func(K, V)
+	janitor           *janitor[K, V]
 }
 
 // Set a cache item, replacing any existing item, with the default expiration.
-func (c *cache) Set(k string, v interface{}) {
+func (c *cache[K, V]) Set(k K, v V) {
 	c.SetWithExpire(k, v, DefaultExpiration)
 }
 
 // Touch replaces the expiry of a key with the default expiration and returns
 // the current value, if any.
-func (c *cache) Touch(k string) (interface{}, bool) {
+func (c *cache[K, V]) Touch(k K) (V, bool) {
 	return c.TouchWithExpire(k, DefaultExpiration)
 }
 
 // Add an item to the cache with the default expiration only if it doesn't exist
 // yet, or if it has expired. It will return an error if the cache key exists.
-func (c *cache) Add(k string, v interface{}) error {
+func (c *cache[K, V]) Add(k K, v V) error {
 	return c.AddWithExpire(k, v, DefaultExpiration)
 }
 
@@ -65,7 +65,7 @@ func (c *cache) Add(k string, v interface{}) error {
 // expired.
 //
 // It will return an error if the cache key doesn't exist.
-func (c *cache) Replace(k string, v interface{}) error {
+func (c *cache[K, V]) Replace(k K, v V) error {
 	return c.ReplaceWithExpire(k, v, DefaultExpiration)
 }
 
@@ -73,7 +73,7 @@ func (c *cache) Replace(k string, v interface{}) error {
 //
 // If the duration is 0 (DefaultExpiration), the cache's default expiration time
 // is used. If it is -1 (NoExpiration), the item never expires.
-func (c *cache) SetWithExpire(k string, v interface{}, d time.Duration) {
+func (c *cache[K, V]) SetWithExpire(k K, v V, d time.Duration) {
 	// "Inlining" of set
 	var e int64
 	if d == DefaultExpiration {
@@ -84,14 +84,14 @@ func (c *cache) SetWithExpire(k string, v interface{}, d time.Duration) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.items[k] = Item{
+	c.items[k] = Item[V]{
 		Object:     v,
 		Expiration: e,
 	}
 }
 
 // TouchWithExpire replaces the expiry of a key and returns the current value, if any.
-func (c *cache) TouchWithExpire(k string, d time.Duration) (interface{}, bool) {
+func (c *cache[K, V]) TouchWithExpire(k K, d time.Duration) (V, bool) {
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
 	}
@@ -101,7 +101,7 @@ func (c *cache) TouchWithExpire(k string, d time.Duration) (interface{}, bool) {
 
 	item, ok := c.items[k]
 	if !ok {
-		return nil, false
+		return c.zero(), false
 	}
 
 	item.Expiration = time.Now().Add(d).UnixNano()
@@ -109,7 +109,7 @@ func (c *cache) TouchWithExpire(k string, d time.Duration) (interface{}, bool) {
 	return item.Object, true
 }
 
-func (c *cache) set(k string, v interface{}, d time.Duration) {
+func (c *cache[K, V]) set(k K, v V, d time.Duration) {
 	var e int64
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
@@ -117,7 +117,7 @@ func (c *cache) set(k string, v interface{}, d time.Duration) {
 	if d > 0 {
 		e = time.Now().Add(d).UnixNano()
 	}
-	c.items[k] = Item{
+	c.items[k] = Item[V]{
 		Object:     v,
 		Expiration: e,
 	}
@@ -125,13 +125,13 @@ func (c *cache) set(k string, v interface{}, d time.Duration) {
 
 // AddWithExpire adds an item to the cache only if it doesn't exist yet, or if
 // it has expired. It will return an error if the cache key exists.
-func (c *cache) AddWithExpire(k string, v interface{}, d time.Duration) error {
+func (c *cache[K, V]) AddWithExpire(k K, v V, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	_, ok := c.get(k)
 	if ok {
-		return errors.New("zcache.Add: item " + k + "already exists")
+		return fmt.Errorf("zcache.Add: item %v already exists", k)
 	}
 	c.set(k, v, d)
 	return nil
@@ -141,13 +141,13 @@ func (c *cache) AddWithExpire(k string, v interface{}, d time.Duration) error {
 // expired.
 //
 // It will return an error if the cache key doesn't exist.
-func (c *cache) ReplaceWithExpire(k string, v interface{}, d time.Duration) error {
+func (c *cache[K, V]) ReplaceWithExpire(k K, v V, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	_, ok := c.get(k)
 	if !ok {
-		return errors.New("zcache.Replace: item " + k + " doesn't exist")
+		return fmt.Errorf("zcache.Replace: item %v doesn't exist", k)
 	}
 	c.set(k, v, d)
 	return nil
@@ -156,17 +156,17 @@ func (c *cache) ReplaceWithExpire(k string, v interface{}, d time.Duration) erro
 // Get an item from the cache.
 //
 // Returns the item or nil and a bool indicating whether the key is set.
-func (c *cache) Get(k string) (interface{}, bool) {
+func (c *cache[K, V]) Get(k K) (V, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
 	if !ok {
-		return nil, false
+		return c.zero(), false
 	}
 	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
-		return nil, false
+		return c.zero(), false
 	}
 	return item.Object, true
 }
@@ -175,14 +175,14 @@ func (c *cache) Get(k string) (interface{}, bool) {
 //
 // Returns the item or nil, a bool indicating that the item is expired, and a
 // bool indicating whether the key was found.
-func (c *cache) GetStale(k string) (v interface{}, expired bool, ok bool) {
+func (c *cache[K, V]) GetStale(k K) (v V, expired bool, ok bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
 	if !ok {
-		return nil, false, false
+		return c.zero(), false, false
 	}
 	return item.Object,
 		item.Expiration > 0 && time.Now().UnixNano() > item.Expiration,
@@ -193,19 +193,19 @@ func (c *cache) GetStale(k string) (v interface{}, expired bool, ok bool) {
 // It returns the item or nil, the expiration time if one is set (if the item
 // never expires a zero value for time.Time is returned), and a bool indicating
 // whether the key was found.
-func (c *cache) GetWithExpire(k string) (interface{}, time.Time, bool) {
+func (c *cache[K, V]) GetWithExpire(k K) (V, time.Time, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
 	if !ok {
-		return nil, time.Time{}, false
+		return c.zero(), time.Time{}, false
 	}
 
 	if item.Expiration > 0 {
 		if time.Now().UnixNano() > item.Expiration {
-			return nil, time.Time{}, false
+			return c.zero(), time.Time{}, false
 		}
 
 		// Return the item and the expiration time
@@ -217,14 +217,14 @@ func (c *cache) GetWithExpire(k string) (interface{}, time.Time, bool) {
 	return item.Object, time.Time{}, true
 }
 
-func (c *cache) get(k string) (interface{}, bool) {
+func (c *cache[K, V]) get(k K) (V, bool) {
 	item, ok := c.items[k]
 	if !ok {
-		return nil, false
+		return c.zero(), false
 	}
 	// "Inlining" of Expired
 	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
-		return nil, false
+		return c.zero(), false
 	}
 	return item.Object, true
 }
@@ -240,7 +240,7 @@ func (c *cache) get(k string) (interface{}, bool) {
 //
 // This is not run for keys that are not set yet; the boolean return indicates
 // if the key was set and if the function was applied.
-func (c *cache) Modify(k string, f func(interface{}) interface{}) bool {
+func (c *cache[K, V]) Modify(k K, f func(V) V) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -258,103 +258,8 @@ func (c *cache) Modify(k string, f func(interface{}) interface{}) bool {
 	return true
 }
 
-// Increment a number with n.
-//
-// Returns an error if the item's value is not a number, if it was not found, or
-// if it is not possible to increment it by n.
-func (c *cache) Increment(k string, n int64) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	v, ok := c.items[k]
-	if !ok || v.Expired() {
-		return errors.New("zcache.Increment: item " + k + " not found")
-	}
-	switch v.Object.(type) {
-	case int:
-		v.Object = v.Object.(int) + int(n)
-	case int8:
-		v.Object = v.Object.(int8) + int8(n)
-	case int16:
-		v.Object = v.Object.(int16) + int16(n)
-	case int32:
-		v.Object = v.Object.(int32) + int32(n)
-	case int64:
-		v.Object = v.Object.(int64) + n
-	case uint:
-		v.Object = v.Object.(uint) + uint(n)
-	case uintptr:
-		v.Object = v.Object.(uintptr) + uintptr(n)
-	case uint8:
-		v.Object = v.Object.(uint8) + uint8(n)
-	case uint16:
-		v.Object = v.Object.(uint16) + uint16(n)
-	case uint32:
-		v.Object = v.Object.(uint32) + uint32(n)
-	case uint64:
-		v.Object = v.Object.(uint64) + uint64(n)
-	case float32:
-		v.Object = v.Object.(float32) + float32(n)
-	case float64:
-		v.Object = v.Object.(float64) + float64(n)
-	default:
-		return errors.New("zcache.Incremeny: the value for " + k + " is not an integer")
-	}
-	c.items[k] = v
-	return nil
-}
-
-// Decrement an item of type int, int8, int16, int32, int64, uintptr, uint,
-// uint8, uint32, or uint64, float32 or float64 by n. Returns an error if the
-// item's value is not an integer, if it was not found, or if it is not
-// possible to decrement it by n. To retrieve the decremented value, use one
-// of the specialized methods, e.g. DecrementInt64.
-func (c *cache) Decrement(k string, n int64) error {
-	// TODO: Implement Increment and Decrement more cleanly.
-	// (Cannot do Increment(k, n*-1) for uints.)
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	v, ok := c.items[k]
-	if !ok || v.Expired() {
-		return errors.New("zcache.Decrement: item not found")
-	}
-	switch v.Object.(type) {
-	case int:
-		v.Object = v.Object.(int) - int(n)
-	case int8:
-		v.Object = v.Object.(int8) - int8(n)
-	case int16:
-		v.Object = v.Object.(int16) - int16(n)
-	case int32:
-		v.Object = v.Object.(int32) - int32(n)
-	case int64:
-		v.Object = v.Object.(int64) - n
-	case uint:
-		v.Object = v.Object.(uint) - uint(n)
-	case uintptr:
-		v.Object = v.Object.(uintptr) - uintptr(n)
-	case uint8:
-		v.Object = v.Object.(uint8) - uint8(n)
-	case uint16:
-		v.Object = v.Object.(uint16) - uint16(n)
-	case uint32:
-		v.Object = v.Object.(uint32) - uint32(n)
-	case uint64:
-		v.Object = v.Object.(uint64) - uint64(n)
-	case float32:
-		v.Object = v.Object.(float32) - float32(n)
-	case float64:
-		v.Object = v.Object.(float64) - float64(n)
-	default:
-		return errors.New("zcache.Decrement: the value for " + k + " is not an integer")
-	}
-	c.items[k] = v
-	return nil
-}
-
 // Delete an item from the cache. Does nothing if the key is not in the cache.
-func (c *cache) Delete(k string) {
+func (c *cache[K, V]) Delete(k K) {
 	c.mu.Lock()
 	v, evicted := c.delete(k)
 	c.mu.Unlock()
@@ -364,18 +269,18 @@ func (c *cache) Delete(k string) {
 }
 
 // Pop gets an item from the cache and deletes it.
-func (c *cache) Pop(k string) (interface{}, bool) {
+func (c *cache[K, V]) Pop(k K) (V, bool) {
 	c.mu.Lock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
 	if !ok {
 		c.mu.Unlock()
-		return nil, false
+		return c.zero(), false
 	}
 	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
 		c.mu.Unlock()
-		return nil, false
+		return c.zero(), false
 	}
 
 	v, evicted := c.delete(k)
@@ -387,7 +292,7 @@ func (c *cache) Pop(k string) (interface{}, bool) {
 	return item.Object, true
 }
 
-func (c *cache) delete(k string) (interface{}, bool) {
+func (c *cache[K, V]) delete(k K) (V, bool) {
 	if c.onEvicted != nil {
 		if v, ok := c.items[k]; ok {
 			delete(c.items, k)
@@ -395,17 +300,23 @@ func (c *cache) delete(k string) (interface{}, bool) {
 		}
 	}
 	delete(c.items, k)
-	return nil, false
+
+	return c.zero(), false
 }
 
-type keyAndValue struct {
-	key   string
-	value interface{}
+func (c *cache[K, V]) zero() V {
+	var zeroValue V
+	return zeroValue
+}
+
+type keyAndValue[K comparable, V any] struct {
+	key   K
+	value V
 }
 
 // DeleteExpired deletes all expired items from the cache.
-func (c *cache) DeleteExpired() {
-	var evictedItems []keyAndValue
+func (c *cache[K, V]) DeleteExpired() {
+	var evictedItems []keyAndValue[K, V]
 	now := time.Now().UnixNano()
 	c.mu.Lock()
 
@@ -414,7 +325,7 @@ func (c *cache) DeleteExpired() {
 		if v.Expiration > 0 && now > v.Expiration {
 			ov, evicted := c.delete(k)
 			if evicted {
-				evictedItems = append(evictedItems, keyAndValue{k, ov})
+				evictedItems = append(evictedItems, keyAndValue[K, V]{k, ov})
 			}
 		}
 	}
@@ -427,18 +338,18 @@ func (c *cache) DeleteExpired() {
 // OnEvicted sets an (optional) function that is called with the key and value
 // when an item is evicted from the cache. (Including when it is deleted
 // manually, but not when it is overwritten.) Set to nil to disable.
-func (c *cache) OnEvicted(f func(string, interface{})) {
+func (c *cache[K, V]) OnEvicted(f func(K, V)) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.onEvicted = f
 }
 
 // Items returns a copy of all unexpired items in the cache.
-func (c *cache) Items() map[string]Item {
+func (c *cache[K, V]) Items() map[K]Item[V] {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	m := make(map[string]Item, len(c.items))
+	m := make(map[K]Item[V], len(c.items))
 	now := time.Now().UnixNano()
 	for k, v := range c.items {
 		// "Inlining" of Expired
@@ -451,11 +362,11 @@ func (c *cache) Items() map[string]Item {
 }
 
 // Keys gets a list of all keys, in no particular order.
-func (c *cache) Keys() []string {
+func (c *cache[K, V]) Keys() []K {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	keys := make([]string, 0, len(c.items))
+	keys := make([]K, 0, len(c.items))
 	now := time.Now().UnixNano()
 	for k, v := range c.items {
 		// "Inlining" of Expired
@@ -470,26 +381,26 @@ func (c *cache) Keys() []string {
 // ItemCount returns the number of items in the cache.
 //
 // This may include items that have expired, but have not yet been cleaned up.
-func (c *cache) ItemCount() int {
+func (c *cache[K, V]) ItemCount() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.items)
 }
 
 // Reset deletes all items from the cache without calling onEvicted.
-func (c *cache) Reset() {
+func (c *cache[K, V]) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.items = map[string]Item{}
+	c.items = map[K]Item[V]{}
 }
 
 // DeleteAll deletes all items from the cache and returns them.
 //
 // Note that onEvicted is called on returned items.
-func (c *cache) DeleteAll() map[string]Item {
+func (c *cache[K, V]) DeleteAll() map[K]Item[V] {
 	c.mu.Lock()
 	items := c.items
-	c.items = map[string]Item{}
+	c.items = map[K]Item[V]{}
 	c.mu.Unlock()
 
 	if c.onEvicted != nil {
@@ -501,22 +412,19 @@ func (c *cache) DeleteAll() map[string]Item {
 	return items
 }
 
-// Filter is the function definition of the DeleteFunc method parameter.
-type Filter func(key string, item Item) (del bool, stop bool)
-
 // DeleteFunc deletes and returns filtered items from the cache.
 //
 // The item will be deleted if the callback's first return argument is true.
 // All deleted items are passed to onEvict and are returned.
 //
 // The loop will stop if the second return argument is true.
-func (c *cache) DeleteFunc(fn Filter) map[string]Item {
+func (c *cache[K, V]) DeleteFunc(fn func(key K, item Item[V]) (del, stop bool)) map[K]Item[V] {
 	c.mu.Lock()
-	m := map[string]Item{}
+	m := map[K]Item[V]{}
 	for k, v := range c.items {
 		del, stop := fn(k, v)
 		if del {
-			m[k] = Item{
+			m[k] = Item[V]{
 				Object:     v.Object,
 				Expiration: v.Expiration,
 			}
@@ -537,12 +445,12 @@ func (c *cache) DeleteFunc(fn Filter) map[string]Item {
 	return m
 }
 
-type janitor struct {
+type janitor[K comparable, V any] struct {
 	Interval time.Duration
 	stop     chan bool
 }
 
-func (j *janitor) run(c *cache) {
+func (j *janitor[K, V]) run(c *cache[K, V]) {
 	ticker := time.NewTicker(j.Interval)
 	for {
 		select {
@@ -555,12 +463,12 @@ func (j *janitor) run(c *cache) {
 	}
 }
 
-func stopJanitor(c *Cache) {
+func stopJanitor[K comparable, V any](c *Cache[K, V]) {
 	c.janitor.stop <- true
 }
 
-func runJanitor(c *cache, ci time.Duration) {
-	j := &janitor{
+func runJanitor[K comparable, V any](c *cache[K, V], ci time.Duration) {
+	j := &janitor[K, V]{
 		Interval: ci,
 		stop:     make(chan bool),
 	}
@@ -568,27 +476,27 @@ func runJanitor(c *cache, ci time.Duration) {
 	go j.run(c)
 }
 
-func newCache(de time.Duration, m map[string]Item) *cache {
+func newCache[K comparable, V any](de time.Duration, m map[K]Item[V]) *cache[K, V] {
 	if de == 0 {
 		de = -1
 	}
-	c := &cache{
+	c := &cache[K, V]{
 		defaultExpiration: de,
 		items:             m,
 	}
 	return c
 }
 
-func newCacheWithJanitor(de time.Duration, ci time.Duration, m map[string]Item) *Cache {
+func newCacheWithJanitor[K comparable, V any](de time.Duration, ci time.Duration, m map[K]Item[V]) *Cache[K, V] {
 	c := newCache(de, m)
 	// This trick ensures that the janitor goroutine (which – if enabled – is
 	// running DeleteExpired on c forever) does not keep the returned C object
 	// from being garbage collected. When it is garbage collected, the finalizer
 	// stops the janitor goroutine, after which c can be collected.
-	C := &Cache{c}
+	C := &Cache[K, V]{c}
 	if ci > 0 {
 		runJanitor(c, ci)
-		runtime.SetFinalizer(C, stopJanitor)
+		runtime.SetFinalizer(C, stopJanitor[K, V])
 	}
 	return C
 }
@@ -601,8 +509,8 @@ func newCacheWithJanitor(de time.Duration, ci time.Duration, m map[string]Item) 
 //
 // If the cleanup interval is less than one, expired items are not deleted from
 // the cache before calling c.DeleteExpired().
-func New(defaultExpiration, cleanupInterval time.Duration) *Cache {
-	return newCacheWithJanitor(defaultExpiration, cleanupInterval, make(map[string]Item))
+func New[K comparable, V any](defaultExpiration, cleanupInterval time.Duration) *Cache[K, V] {
+	return newCacheWithJanitor(defaultExpiration, cleanupInterval, make(map[K]Item[V]))
 }
 
 // NewFrom creates a new cache like New() and populates the cache with the given
@@ -622,6 +530,6 @@ func New(defaultExpiration, cleanupInterval time.Duration) *Cache {
 // gob.Register() the individual types stored in the cache before encoding a map
 // retrieved with c.Items(), and to register those same types before decoding a
 // blob containing an items map.
-func NewFrom(defaultExpiration, cleanupInterval time.Duration, items map[string]Item) *Cache {
+func NewFrom[K comparable, V any](defaultExpiration, cleanupInterval time.Duration, items map[K]Item[V]) *Cache[K, V] {
 	return newCacheWithJanitor(defaultExpiration, cleanupInterval, items)
 }

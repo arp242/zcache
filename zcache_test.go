@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func wantKeys(t *testing.T, tc *Cache, want []string, dontWant []string) {
+func wantKeys(t *testing.T, tc *Cache[string, any], want []string, dontWant []string) {
 	t.Helper()
 
 	for _, k := range want {
@@ -30,13 +30,8 @@ func wantKeys(t *testing.T, tc *Cache, want []string, dontWant []string) {
 	}
 }
 
-type TestStruct struct {
-	Num      int
-	Children []*TestStruct
-}
-
 func TestCache(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 
 	a, found := tc.Get("a")
 	if found || a != nil {
@@ -91,7 +86,7 @@ func TestCache(t *testing.T) {
 func TestCacheTimes(t *testing.T) {
 	var found bool
 
-	tc := New(50*time.Millisecond, 1*time.Millisecond)
+	tc := New[string, int](50*time.Millisecond, 1*time.Millisecond)
 	tc.Set("a", 1)
 	tc.SetWithExpire("b", 2, NoExpiration)
 	tc.SetWithExpire("c", 3, 20*time.Millisecond)
@@ -127,7 +122,7 @@ func TestCacheTimes(t *testing.T) {
 }
 
 func TestNewFrom(t *testing.T) {
-	m := map[string]Item{
+	m := map[string]Item[int]{
 		"a": {
 			Object:     1,
 			Expiration: 0,
@@ -137,25 +132,30 @@ func TestNewFrom(t *testing.T) {
 			Expiration: 0,
 		},
 	}
-	tc := NewFrom(DefaultExpiration, 0, m)
+	tc := NewFrom[string, int](DefaultExpiration, 0, m)
 	a, found := tc.Get("a")
 	if !found {
 		t.Fatal("Did not find a")
 	}
-	if a.(int) != 1 {
+	if a != 1 {
 		t.Fatal("a is not 1")
 	}
 	b, found := tc.Get("b")
 	if !found {
 		t.Fatal("Did not find b")
 	}
-	if b.(int) != 2 {
+	if b != 2 {
 		t.Fatal("b is not 2")
 	}
 }
 
 func TestStorePointerToStruct(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	type TestStruct struct {
+		Num      int
+		Children []*TestStruct
+	}
+
+	tc := New[string, any](DefaultExpiration, 0)
 	tc.Set("foo", &TestStruct{Num: 1})
 	v, found := tc.Get("foo")
 	if !found {
@@ -175,14 +175,14 @@ func TestStorePointerToStruct(t *testing.T) {
 }
 
 func TestOnEvicted(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, int](DefaultExpiration, 0)
 	tc.Set("foo", 3)
 	if tc.onEvicted != nil {
 		t.Fatal("tc.onEvicted is not nil")
 	}
 	works := false
-	tc.OnEvicted(func(k string, v interface{}) {
-		if k == "foo" && v.(int) == 3 {
+	tc.OnEvicted(func(k string, v int) {
+		if k == "foo" && v == 3 {
 			works = true
 		}
 		tc.Set("bar", 4)
@@ -192,13 +192,13 @@ func TestOnEvicted(t *testing.T) {
 	if !works {
 		t.Error("works bool not true")
 	}
-	if v.(int) != 4 {
+	if v != 4 {
 		t.Error("bar was not 4")
 	}
 }
 
 func TestTouch(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, string](DefaultExpiration, 0)
 
 	tc.SetWithExpire("a", "b", 5*time.Second)
 	_, first, _ := tc.GetWithExpire("a")
@@ -207,17 +207,16 @@ func TestTouch(t *testing.T) {
 		t.Fatal("!ok")
 	}
 	_, second, _ := tc.GetWithExpire("a")
-	if v.(string) != "b" {
+	if v != "b" {
 		t.Error("wrong value")
 	}
-
 	if first.Equal(second) {
 		t.Errorf("not updated\nfirst:  %s\nsecond: %s", first, second)
 	}
 }
 
 func TestGetWithExpire(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 
 	a, expiration, ok := tc.GetWithExpire("a")
 	if ok || a != nil || !expiration.IsZero() {
@@ -310,7 +309,7 @@ func TestGetWithExpire(t *testing.T) {
 }
 
 func TestGetStale(t *testing.T) {
-	tc := New(5*time.Millisecond, 0)
+	tc := New[string, any](5*time.Millisecond, 0)
 
 	tc.Set("x", "y")
 
@@ -345,7 +344,7 @@ func TestGetStale(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 	err := tc.Add("foo", "bar")
 	if err != nil {
 		t.Error("Couldn't add foo even though it shouldn't exist")
@@ -357,7 +356,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestReplace(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, string](DefaultExpiration, 0)
 	err := tc.Replace("foo", "bar")
 	if err == nil {
 		t.Error("Replaced foo when it shouldn't exist")
@@ -370,7 +369,7 @@ func TestReplace(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 
 	tc.Set("foo", "bar")
 	tc.Delete("foo")
@@ -398,7 +397,7 @@ func (o *onEvictTest) add(k string, v interface{}) {
 }
 
 func TestPop(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 
 	var onEvict onEvictTest
 	tc.OnEvicted(onEvict.add)
@@ -428,13 +427,11 @@ func TestPop(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, []string](DefaultExpiration, 0)
 
 	tc.Set("k", []string{"x"})
-	ok := tc.Modify("k", func(v interface{}) interface{} {
-		vv := v.([]string)
-		vv = append(vv, "y")
-		return vv
+	ok := tc.Modify("k", func(v []string) []string {
+		return append(v, "y")
 	})
 	if !ok {
 		t.Error("ok is false")
@@ -444,7 +441,7 @@ func TestModify(t *testing.T) {
 		t.Errorf("value wrong: %v", v)
 	}
 
-	ok = tc.Modify("doesntexist", func(v interface{}) interface{} {
+	ok = tc.Modify("doesntexist", func(v []string) []string {
 		t.Error("should not be called")
 		return nil
 	})
@@ -452,7 +449,7 @@ func TestModify(t *testing.T) {
 		t.Error("ok is true")
 	}
 
-	tc.Modify("k", func(v interface{}) interface{} { return nil })
+	tc.Modify("k", func(v []string) []string { return nil })
 	v, ok = tc.Get("k")
 	if !ok {
 		t.Error("ok not set")
@@ -463,14 +460,14 @@ func TestModify(t *testing.T) {
 }
 
 func TestItems(t *testing.T) {
-	tc := New(DefaultExpiration, 1*time.Millisecond)
+	tc := New[string, any](DefaultExpiration, 1*time.Millisecond)
 	tc.Set("foo", "1")
 	tc.Set("bar", "2")
 	tc.Set("baz", "3")
 	tc.SetWithExpire("exp", "4", 1)
 	time.Sleep(10 * time.Millisecond)
 	if n := tc.ItemCount(); n != 3 {
-		t.Errorf("Item count is not 3: %d", n)
+		t.Errorf("Item count is not 3 but %d", n)
 	}
 
 	keys := tc.Keys()
@@ -479,7 +476,7 @@ func TestItems(t *testing.T) {
 		t.Errorf("%v", keys)
 	}
 
-	want := map[string]Item{
+	want := map[string]Item[any]{
 		"foo": {Object: "1"},
 		"bar": {Object: "2"},
 		"baz": {Object: "3"},
@@ -490,7 +487,7 @@ func TestItems(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 	tc.Set("foo", "bar")
 	tc.Set("baz", "yes")
 	tc.Reset()
@@ -511,7 +508,7 @@ func TestReset(t *testing.T) {
 }
 
 func TestDeleteAll(t *testing.T) {
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 	tc.Set("foo", 3)
 	if tc.onEvicted != nil {
 		t.Fatal("tc.onEvicted is not nil")
@@ -529,7 +526,7 @@ func TestDeleteAll(t *testing.T) {
 }
 
 func TestDeleteFunc(t *testing.T) {
-	tc := New(NoExpiration, 0)
+	tc := New[string, any](NoExpiration, 0)
 	tc.Set("foo", 3)
 	tc.Set("bar", 4)
 
@@ -540,7 +537,7 @@ func TestDeleteFunc(t *testing.T) {
 		}
 	})
 
-	tc.DeleteFunc(func(k string, v Item) (bool, bool) {
+	tc.DeleteFunc(func(k string, v Item[any]) (bool, bool) {
 		return k == "foo" && v.Object.(int) == 3, false
 	})
 
@@ -558,11 +555,34 @@ func TestDeleteFunc(t *testing.T) {
 	count := tc.ItemCount()
 
 	// Only one item should be deleted here
-	tc.DeleteFunc(func(k string, v Item) (bool, bool) {
+	tc.DeleteFunc(func(k string, v Item[any]) (bool, bool) {
 		return true, true
 	})
 
 	if tc.ItemCount() != count-1 {
 		t.Errorf("unexpected number of items in the cache. item count expected %d, found %d", count-1, tc.ItemCount())
+	}
+}
+
+func TestItemExpired(t *testing.T) {
+	tc := New[string, any](10*time.Millisecond, NoExpiration)
+	tc.Set("a", "XX")
+	tc.SetWithExpire("b", "YY", NoExpiration)
+
+	items := tc.Items()
+
+	if items["a"].Expired() {
+		t.Fatal("expired too soon")
+	}
+	if items["b"].Expired() {
+		t.Fatal("expired too soon")
+	}
+
+	time.Sleep(11 * time.Millisecond)
+	if !items["a"].Expired() {
+		t.Fatal("not expired")
+	}
+	if items["b"].Expired() {
+		t.Fatal("b expired")
 	}
 }

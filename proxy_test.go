@@ -5,10 +5,10 @@ import (
 )
 
 func TestProxy(t *testing.T) {
-	c := New(NoExpiration, 0)
-	pc := NewProxy(c)
+	c := New[string, any](NoExpiration, 0)
+	pc := NewProxy[string, any](c)
 
-	has := func(v interface{}, ok bool) {
+	has := func(v any, ok bool) {
 		t.Helper()
 		if !ok {
 			t.Error("ok false")

@@ -1,7 +1,6 @@
 package zcache
 
 import (
-	"errors"
 	"runtime"
 	"strconv"
 	"sync"
@@ -11,7 +10,7 @@ import (
 
 func benchmarkGet(b *testing.B, exp time.Duration) {
 	b.StopTimer()
-	tc := New(exp, 0)
+	tc := New[string, any](exp, 0)
 	tc.Set("foo", "bar")
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -21,7 +20,7 @@ func benchmarkGet(b *testing.B, exp time.Duration) {
 
 func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 	b.StopTimer()
-	tc := New(exp, 0)
+	tc := New[string, any](exp, 0)
 	tc.Set("foo", "bar")
 	wg := new(sync.WaitGroup)
 	workers := runtime.NumCPU()
@@ -41,7 +40,7 @@ func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 
 func benchmarkSet(b *testing.B, exp time.Duration) {
 	b.StopTimer()
-	tc := New(exp, 0)
+	tc := New[string, any](exp, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.Set("foo", "bar")
@@ -136,7 +135,7 @@ func BenchmarkRWMutexMapSet(b *testing.B) {
 
 func BenchmarkCacheSetDelete(b *testing.B) {
 	b.StopTimer()
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.Set("foo", "bar")
@@ -161,7 +160,7 @@ func BenchmarkRWMutexMapSetDelete(b *testing.B) {
 
 func BenchmarkCacheSetDeleteSingleLock(b *testing.B) {
 	b.StopTimer()
-	tc := New(DefaultExpiration, 0)
+	tc := New[string, any](DefaultExpiration, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		tc.mu.Lock()
@@ -184,62 +183,9 @@ func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
 	}
 }
 
-func BenchmarkIncrement(b *testing.B) {
-	b.StopTimer()
-	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 0)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.Increment("foo", 1)
-	}
-}
-
-type CacheInt Cache
-
-func (c *CacheInt) IncrementInt(k string, n int) (int, error) {
-	var ii int
-	ok := c.Modify(k, func(v interface{}) interface{} {
-		i, ok := v.(int)
-		if !ok {
-			// ??? return err?
-			return nil
-		}
-		ii = i + n
-		return ii
-	})
-	if !ok {
-		return 0, errors.New("oh noes")
-	}
-	return ii, nil
-}
-
-func BenchmarkIncrementInt2(b *testing.B) {
-	b.StopTimer()
-
-	tc := CacheInt(*New(DefaultExpiration, 0))
-	tc.Set("foo", 0)
-
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.Increment("foo", 1)
-	}
-}
-
-func BenchmarkIncrementInt(b *testing.B) {
-	b.StopTimer()
-
-	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 0)
-
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		tc.Increment("foo", 1)
-	}
-}
-
 func BenchmarkDeleteExpiredLoop(b *testing.B) {
 	b.StopTimer()
-	tc := New(5*time.Minute, 0)
+	tc := New[string, any](5*time.Minute, 0)
 	tc.mu.Lock()
 	for i := 0; i < 100000; i++ {
 		tc.set(strconv.Itoa(i), "bar", DefaultExpiration)
