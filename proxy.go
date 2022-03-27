@@ -13,20 +13,20 @@ import (
 // Proxies cache entries don't have an expiry and are never automatically
 // deleted, the logic being that the same "proxy → key" mapping should always be
 // valid. The items in the underlying cache can still be expired or deleted, and
-// you can still manually call Delete() or Flush().
-type Proxy[K comparable, V any] struct {
-	cache *Cache[K, V]
+// you can still manually call Delete() or Reset().
+type Proxy[ProxyK, MainK comparable, V any] struct {
+	cache *Cache[MainK, V]
 	mu    sync.RWMutex
-	m     map[K]K
+	m     map[ProxyK]MainK
 }
 
 // NewProxy creates a new proxied cache.
-func NewProxy[K comparable, V any](c *Cache[K, V]) *Proxy[K, V] {
-	return &Proxy[K, V]{cache: c, m: make(map[K]K)}
+func NewProxy[ProxyK, MainK comparable, V any](c *Cache[MainK, V]) *Proxy[ProxyK, MainK, V] {
+	return &Proxy[ProxyK, MainK, V]{cache: c, m: make(map[ProxyK]MainK)}
 }
 
 // Proxy items from "proxyKey" to "mainKey".
-func (p *Proxy[K, V]) Proxy(mainKey, proxyKey K) {
+func (p *Proxy[ProxyK, MainK, V]) Proxy(mainKey MainK, proxyKey ProxyK) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.m[proxyKey] = mainKey
@@ -35,21 +35,21 @@ func (p *Proxy[K, V]) Proxy(mainKey, proxyKey K) {
 // Delete stops proxying "proxyKey" to "mainKey".
 //
 // This only removes the proxy link, not the entry from the main cache.
-func (p *Proxy[K, V]) Delete(proxyKey K) {
+func (p *Proxy[ProxyK, MainK, V]) Delete(proxyKey ProxyK) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	delete(p.m, proxyKey)
 }
 
-// Flush removes all proxied keys.
-func (p *Proxy[K, V]) Flush() {
+// Reset removes all proxied keys (but not the underlying cache).
+func (p *Proxy[ProxyK, MainK, V]) Reset() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.m = make(map[K]K)
+	p.m = make(map[ProxyK]MainK)
 }
 
 // Key gets the main key for this proxied entry, if it exist.
-func (p *Proxy[K, V]) Key(proxyKey K) (K, bool) {
+func (p *Proxy[ProxyK, MainK, V]) Key(proxyKey ProxyK) (MainK, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	mainKey, ok := p.m[proxyKey]
@@ -57,7 +57,7 @@ func (p *Proxy[K, V]) Key(proxyKey K) (K, bool) {
 }
 
 // Cache gets the associated cache.
-func (p *Proxy[K, V]) Cache() *Cache[K, V] {
+func (p *Proxy[ProxyK, MainK, V]) Cache() *Cache[MainK, V] {
 	return p.cache
 }
 
@@ -65,7 +65,7 @@ func (p *Proxy[K, V]) Cache() *Cache[K, V] {
 // proxyKey.
 //
 // This behaves like zcache.Cache.Set() otherwise.
-func (p *Proxy[K, V]) Set(mainKey, proxyKey K, v V) {
+func (p *Proxy[ProxyK, MainK, V]) Set(mainKey MainK, proxyKey ProxyK, v V) {
 	p.mu.Lock()
 	p.m[proxyKey] = mainKey
 	p.mu.Unlock()
@@ -73,7 +73,7 @@ func (p *Proxy[K, V]) Set(mainKey, proxyKey K, v V) {
 }
 
 // Get a proxied cache item with zcache.Cache.Get()
-func (p *Proxy[K, V]) Get(proxyKey K) (V, bool) {
+func (p *Proxy[ProxyK, MainK, V]) Get(proxyKey ProxyK) (V, bool) {
 	p.mu.RLock()
 	mainKey, ok := p.m[proxyKey]
 	if !ok {
@@ -86,11 +86,11 @@ func (p *Proxy[K, V]) Get(proxyKey K) (V, bool) {
 }
 
 // Items gets all items in this proxy, as proxyKey → mainKey
-func (p *Proxy[K, V]) Items() map[K]K {
+func (p *Proxy[ProxyK, MainK, V]) Items() map[ProxyK]MainK {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	m := make(map[K]K, len(p.m))
+	m := make(map[ProxyK]MainK, len(p.m))
 	for k, v := range p.m {
 		m[k] = v
 	}

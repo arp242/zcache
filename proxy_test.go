@@ -7,7 +7,7 @@ import (
 
 func TestProxy(t *testing.T) {
 	c := New[string, any](NoExpiration, 0)
-	pc := NewProxy[string, any](c)
+	pc := NewProxy[string, string, any](c)
 
 	has := func(v any, ok bool) {
 		t.Helper()
