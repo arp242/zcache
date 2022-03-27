@@ -1,12 +1,7 @@
-//go:generate sh -c "go run gen.go > incr.go"
-
 package zcache
 
 import (
-	"encoding/gob"
 	"errors"
-	"io"
-	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -49,11 +44,36 @@ type cache struct {
 	janitor           *janitor
 }
 
-// Set a cache item, replacing any existing item.
+// Set a cache item, replacing any existing item, with the default expiration.
+func (c *cache) Set(k string, v interface{}) {
+	c.SetWithExpire(k, v, DefaultExpiration)
+}
+
+// Touch replaces the expiry of a key with the default expiration and returns
+// the current value, if any.
+func (c *cache) Touch(k string) (interface{}, bool) {
+	return c.TouchWithExpire(k, DefaultExpiration)
+}
+
+// Add an item to the cache with the default expiration only if it doesn't exist
+// yet, or if it has expired. It will return an error if the cache key exists.
+func (c *cache) Add(k string, v interface{}) error {
+	return c.AddWithExpire(k, v, DefaultExpiration)
+}
+
+// Replace sets a new value for the key only if it already exists and isn't
+// expired.
+//
+// It will return an error if the cache key doesn't exist.
+func (c *cache) Replace(k string, v interface{}) error {
+	return c.ReplaceWithExpire(k, v, DefaultExpiration)
+}
+
+// SetWithExpire sets a cache item, replacing any existing item.
 //
 // If the duration is 0 (DefaultExpiration), the cache's default expiration time
 // is used. If it is -1 (NoExpiration), the item never expires.
-func (c *cache) Set(k string, v interface{}, d time.Duration) {
+func (c *cache) SetWithExpire(k string, v interface{}, d time.Duration) {
 	// "Inlining" of set
 	var e int64
 	if d == DefaultExpiration {
@@ -70,13 +90,8 @@ func (c *cache) Set(k string, v interface{}, d time.Duration) {
 	}
 }
 
-// SetDefault calls Set() with the default expiration for this cache.
-func (c *cache) SetDefault(k string, v interface{}) {
-	c.Set(k, v, DefaultExpiration)
-}
-
-// Touch replaces the expiry of a key and returns the current value, if any.
-func (c *cache) Touch(k string, d time.Duration) (interface{}, bool) {
+// TouchWithExpire replaces the expiry of a key and returns the current value, if any.
+func (c *cache) TouchWithExpire(k string, d time.Duration) (interface{}, bool) {
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
 	}
@@ -108,10 +123,9 @@ func (c *cache) set(k string, v interface{}, d time.Duration) {
 	}
 }
 
-// Add an item to the cache only if it doesn't exist yet, or if it has expired.
-//
-// It will return an error if the cache key exists.
-func (c *cache) Add(k string, v interface{}, d time.Duration) error {
+// AddWithExpire adds an item to the cache only if it doesn't exist yet, or if
+// it has expired. It will return an error if the cache key exists.
+func (c *cache) AddWithExpire(k string, v interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -123,11 +137,11 @@ func (c *cache) Add(k string, v interface{}, d time.Duration) error {
 	return nil
 }
 
-// Replace sets a new value for the key only if it already exists and isn't
+// ReplaceWithExpire sets a new value for the key only if it already exists and isn't
 // expired.
 //
 // It will return an error if the cache key doesn't exist.
-func (c *cache) Replace(k string, v interface{}, d time.Duration) error {
+func (c *cache) ReplaceWithExpire(k string, v interface{}, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -175,11 +189,11 @@ func (c *cache) GetStale(k string) (v interface{}, expired bool, ok bool) {
 		true
 }
 
-// GetWithExpiration returns an item and its expiration time from the cache.
+// GetWithExpire returns an item and its expiration time from the cache.
 // It returns the item or nil, the expiration time if one is set (if the item
 // never expires a zero value for time.Time is returned), and a bool indicating
 // whether the key was found.
-func (c *cache) GetWithExpiration(k string) (interface{}, time.Time, bool) {
+func (c *cache) GetWithExpire(k string) (interface{}, time.Time, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -244,11 +258,10 @@ func (c *cache) Modify(k string, f func(interface{}) interface{}) bool {
 	return true
 }
 
-// Increment an item of type int, int8, int16, int32, int64, uintptr, uint,
-// uint8, uint32, or uint64, float32 or float64 by n. Returns an error if the
-// item's value is not an integer, if it was not found, or if it is not
-// possible to increment it by n. To retrieve the incremented value, use one
-// of the specialized methods, e.g. IncrementInt64.
+// Increment a number with n.
+//
+// Returns an error if the item's value is not a number, if it was not found, or
+// if it is not possible to increment it by n.
 func (c *cache) Increment(k string, n int64) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -420,84 +433,6 @@ func (c *cache) OnEvicted(f func(string, interface{})) {
 	c.onEvicted = f
 }
 
-// Save the cache's items (using Gob) to an io.Writer.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) Save(w io.Writer) (err error) {
-	enc := gob.NewEncoder(w)
-	defer func() {
-		if rec := recover(); rec != nil {
-			err = errors.New("zcache.Save: error registering item types with Gob library")
-		}
-	}()
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	for _, v := range c.items {
-		gob.Register(v.Object)
-	}
-	err = enc.Encode(&c.items)
-	return
-}
-
-// SaveFile writes the cache's items to the given filename, creating the file if
-// it doesn't exist, and overwriting it if it does.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) SaveFile(fname string) error {
-	fp, err := os.Create(fname)
-	if err != nil {
-		return err
-	}
-	err = c.Save(fp)
-	if err != nil {
-		fp.Close()
-		return err
-	}
-	return fp.Close()
-}
-
-// Load (Gob-serialized) cache items from an io.Reader, excluding any items with
-// keys that already exist (and haven't expired) in the current cache.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) Load(r io.Reader) error {
-	dec := gob.NewDecoder(r)
-	items := map[string]Item{}
-	err := dec.Decode(&items)
-	if err == nil {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		for k, v := range items {
-			ov, ok := c.items[k]
-			if !ok || ov.Expired() {
-				c.items[k] = v
-			}
-		}
-	}
-	return err
-}
-
-// LoadFile reads cache items from the given filename, excluding any items with
-// keys that already exist in the current cache.
-//
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
-func (c *cache) LoadFile(fname string) error {
-	fp, err := os.Open(fname)
-	if err != nil {
-		return err
-	}
-	err = c.Load(fp)
-	if err != nil {
-		fp.Close()
-		return err
-	}
-	return fp.Close()
-}
-
 // Items returns a copy of all unexpired items in the cache.
 func (c *cache) Items() map[string]Item {
 	c.mu.RLock()
@@ -541,10 +476,8 @@ func (c *cache) ItemCount() int {
 	return len(c.items)
 }
 
-// Flush deletes all items from the cache without calling onEvicted.
-//
-// This is a way to reset the cache to its original state.
-func (c *cache) Flush() {
+// Reset deletes all items from the cache without calling onEvicted.
+func (c *cache) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.items = map[string]Item{}

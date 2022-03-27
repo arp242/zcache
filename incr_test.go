@@ -4,7 +4,7 @@ import "testing"
 
 func TestIncrementWithInt(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint", 1, DefaultExpiration)
+	tc.Set("tint", 1)
 	err := tc.Increment("tint", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -20,7 +20,7 @@ func TestIncrementWithInt(t *testing.T) {
 
 func TestIncrementWithInt8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint8", int8(1), DefaultExpiration)
+	tc.Set("tint8", int8(1))
 	err := tc.Increment("tint8", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -36,7 +36,7 @@ func TestIncrementWithInt8(t *testing.T) {
 
 func TestIncrementWithInt16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint16", int16(1), DefaultExpiration)
+	tc.Set("tint16", int16(1))
 	err := tc.Increment("tint16", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -52,7 +52,7 @@ func TestIncrementWithInt16(t *testing.T) {
 
 func TestIncrementWithInt32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint32", int32(1), DefaultExpiration)
+	tc.Set("tint32", int32(1))
 	err := tc.Increment("tint32", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -68,7 +68,7 @@ func TestIncrementWithInt32(t *testing.T) {
 
 func TestIncrementWithInt64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint64", int64(1), DefaultExpiration)
+	tc.Set("tint64", int64(1))
 	err := tc.Increment("tint64", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -84,7 +84,7 @@ func TestIncrementWithInt64(t *testing.T) {
 
 func TestIncrementWithUint(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint", uint(1), DefaultExpiration)
+	tc.Set("tuint", uint(1))
 	err := tc.Increment("tuint", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -100,7 +100,7 @@ func TestIncrementWithUint(t *testing.T) {
 
 func TestIncrementWithUintptr(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuintptr", uintptr(1), DefaultExpiration)
+	tc.Set("tuintptr", uintptr(1))
 	err := tc.Increment("tuintptr", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -117,7 +117,7 @@ func TestIncrementWithUintptr(t *testing.T) {
 
 func TestIncrementWithUint8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint8", uint8(1), DefaultExpiration)
+	tc.Set("tuint8", uint8(1))
 	err := tc.Increment("tuint8", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -133,7 +133,7 @@ func TestIncrementWithUint8(t *testing.T) {
 
 func TestIncrementWithUint16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint16", uint16(1), DefaultExpiration)
+	tc.Set("tuint16", uint16(1))
 	err := tc.Increment("tuint16", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -150,7 +150,7 @@ func TestIncrementWithUint16(t *testing.T) {
 
 func TestIncrementWithUint32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint32", uint32(1), DefaultExpiration)
+	tc.Set("tuint32", uint32(1))
 	err := tc.Increment("tuint32", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -166,7 +166,7 @@ func TestIncrementWithUint32(t *testing.T) {
 
 func TestIncrementWithUint64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint64", uint64(1), DefaultExpiration)
+	tc.Set("tuint64", uint64(1))
 	err := tc.Increment("tuint64", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -183,7 +183,7 @@ func TestIncrementWithUint64(t *testing.T) {
 
 func TestIncrementWithFloat32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float32", float32(1.5), DefaultExpiration)
+	tc.Set("float32", float32(1.5))
 	err := tc.Increment("float32", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -199,7 +199,7 @@ func TestIncrementWithFloat32(t *testing.T) {
 
 func TestIncrementWithFloat64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float64", float64(1.5), DefaultExpiration)
+	tc.Set("float64", float64(1.5))
 	err := tc.Increment("float64", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -215,8 +215,8 @@ func TestIncrementWithFloat64(t *testing.T) {
 
 func TestIncrementFloatWithFloat32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float32", float32(1.5), DefaultExpiration)
-	err := tc.IncrementFloat("float32", 2)
+	tc.Set("float32", float32(1.5))
+	err := tc.Increment("float32", 2)
 	if err != nil {
 		t.Error("Error incrementfloating:", err)
 	}
@@ -231,8 +231,8 @@ func TestIncrementFloatWithFloat32(t *testing.T) {
 
 func TestIncrementFloatWithFloat64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float64", float64(1.5), DefaultExpiration)
-	err := tc.IncrementFloat("float64", 2)
+	tc.Set("float64", float64(1.5))
+	err := tc.Increment("float64", 2)
 	if err != nil {
 		t.Error("Error incrementfloating:", err)
 	}
@@ -247,7 +247,7 @@ func TestIncrementFloatWithFloat64(t *testing.T) {
 
 func TestDecrementWithInt(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int", int(5), DefaultExpiration)
+	tc.Set("int", int(5))
 	err := tc.Decrement("int", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -263,7 +263,7 @@ func TestDecrementWithInt(t *testing.T) {
 
 func TestDecrementWithInt8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int8", int8(5), DefaultExpiration)
+	tc.Set("int8", int8(5))
 	err := tc.Decrement("int8", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -279,7 +279,7 @@ func TestDecrementWithInt8(t *testing.T) {
 
 func TestDecrementWithInt16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int16", int16(5), DefaultExpiration)
+	tc.Set("int16", int16(5))
 	err := tc.Decrement("int16", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -295,7 +295,7 @@ func TestDecrementWithInt16(t *testing.T) {
 
 func TestDecrementWithInt32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int32", int32(5), DefaultExpiration)
+	tc.Set("int32", int32(5))
 	err := tc.Decrement("int32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -311,7 +311,7 @@ func TestDecrementWithInt32(t *testing.T) {
 
 func TestDecrementWithInt64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int64", int64(5), DefaultExpiration)
+	tc.Set("int64", int64(5))
 	err := tc.Decrement("int64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -327,7 +327,7 @@ func TestDecrementWithInt64(t *testing.T) {
 
 func TestDecrementWithUint(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint", uint(5), DefaultExpiration)
+	tc.Set("uint", uint(5))
 	err := tc.Decrement("uint", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -343,7 +343,7 @@ func TestDecrementWithUint(t *testing.T) {
 
 func TestDecrementWithUintptr(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uintptr", uintptr(5), DefaultExpiration)
+	tc.Set("uintptr", uintptr(5))
 	err := tc.Decrement("uintptr", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -359,7 +359,7 @@ func TestDecrementWithUintptr(t *testing.T) {
 
 func TestDecrementWithUint8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint8", uint8(5), DefaultExpiration)
+	tc.Set("uint8", uint8(5))
 	err := tc.Decrement("uint8", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -375,7 +375,7 @@ func TestDecrementWithUint8(t *testing.T) {
 
 func TestDecrementWithUint16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint16", uint16(5), DefaultExpiration)
+	tc.Set("uint16", uint16(5))
 	err := tc.Decrement("uint16", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -391,7 +391,7 @@ func TestDecrementWithUint16(t *testing.T) {
 
 func TestDecrementWithUint32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint32", uint32(5), DefaultExpiration)
+	tc.Set("uint32", uint32(5))
 	err := tc.Decrement("uint32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -407,7 +407,7 @@ func TestDecrementWithUint32(t *testing.T) {
 
 func TestDecrementWithUint64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint64", uint64(5), DefaultExpiration)
+	tc.Set("uint64", uint64(5))
 	err := tc.Decrement("uint64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -423,7 +423,7 @@ func TestDecrementWithUint64(t *testing.T) {
 
 func TestDecrementWithFloat32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float32", float32(5.5), DefaultExpiration)
+	tc.Set("float32", float32(5.5))
 	err := tc.Decrement("float32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -439,7 +439,7 @@ func TestDecrementWithFloat32(t *testing.T) {
 
 func TestDecrementWithFloat64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float64", float64(5.5), DefaultExpiration)
+	tc.Set("float64", float64(5.5))
 	err := tc.Decrement("float64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -455,8 +455,8 @@ func TestDecrementWithFloat64(t *testing.T) {
 
 func TestDecrementFloatWithFloat32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float32", float32(5.5), DefaultExpiration)
-	err := tc.DecrementFloat("float32", 2)
+	tc.Set("float32", float32(5.5))
+	err := tc.Decrement("float32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -471,8 +471,8 @@ func TestDecrementFloatWithFloat32(t *testing.T) {
 
 func TestDecrementFloatWithFloat64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float64", float64(5.5), DefaultExpiration)
-	err := tc.DecrementFloat("float64", 2)
+	tc.Set("float64", float64(5.5))
+	err := tc.Decrement("float64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -485,10 +485,11 @@ func TestDecrementFloatWithFloat64(t *testing.T) {
 	}
 }
 
-func TestIncrementInt(t *testing.T) {
+/*
+func TestIncrement(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint", 1, DefaultExpiration)
-	n, err := tc.IncrementInt("tint", 2)
+	tc.Set("tint", 1)
+	n, err := tc.Increment("tint", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
 	}
@@ -506,8 +507,8 @@ func TestIncrementInt(t *testing.T) {
 
 func TestIncrementInt8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint8", int8(1), DefaultExpiration)
-	n, err := tc.IncrementInt8("tint8", 2)
+	tc.Set("tint8", int8(1))
+	n, err := tc.Increment("tint8", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
 	}
@@ -525,8 +526,8 @@ func TestIncrementInt8(t *testing.T) {
 
 func TestIncrementInt16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint16", int16(1), DefaultExpiration)
-	n, err := tc.IncrementInt16("tint16", 2)
+	tc.Set("tint16", int16(1))
+	n, err := tc.Increment("tint16", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
 	}
@@ -544,8 +545,8 @@ func TestIncrementInt16(t *testing.T) {
 
 func TestIncrementInt32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint32", int32(1), DefaultExpiration)
-	n, err := tc.IncrementInt32("tint32", 2)
+	tc.Set("tint32", int32(1))
+	n, err := tc.Increment("tint32", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
 	}
@@ -563,8 +564,8 @@ func TestIncrementInt32(t *testing.T) {
 
 func TestIncrementInt64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tint64", int64(1), DefaultExpiration)
-	n, err := tc.IncrementInt64("tint64", 2)
+	tc.Set("tint64", int64(1))
+	n, err := tc.Increment("tint64", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
 	}
@@ -582,7 +583,7 @@ func TestIncrementInt64(t *testing.T) {
 
 func TestIncrementUint(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint", uint(1), DefaultExpiration)
+	tc.Set("tuint", uint(1))
 	n, err := tc.IncrementUint("tuint", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -601,7 +602,7 @@ func TestIncrementUint(t *testing.T) {
 
 func TestIncrementUintptr(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuintptr", uintptr(1), DefaultExpiration)
+	tc.Set("tuintptr", uintptr(1))
 	n, err := tc.IncrementUintptr("tuintptr", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -620,7 +621,7 @@ func TestIncrementUintptr(t *testing.T) {
 
 func TestIncrementUint8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint8", uint8(1), DefaultExpiration)
+	tc.Set("tuint8", uint8(1))
 	n, err := tc.IncrementUint8("tuint8", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -639,7 +640,7 @@ func TestIncrementUint8(t *testing.T) {
 
 func TestIncrementUint16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint16", uint16(1), DefaultExpiration)
+	tc.Set("tuint16", uint16(1))
 	n, err := tc.IncrementUint16("tuint16", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -658,7 +659,7 @@ func TestIncrementUint16(t *testing.T) {
 
 func TestIncrementUint32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint32", uint32(1), DefaultExpiration)
+	tc.Set("tuint32", uint32(1))
 	n, err := tc.IncrementUint32("tuint32", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -677,7 +678,7 @@ func TestIncrementUint32(t *testing.T) {
 
 func TestIncrementUint64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("tuint64", uint64(1), DefaultExpiration)
+	tc.Set("tuint64", uint64(1))
 	n, err := tc.IncrementUint64("tuint64", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -696,7 +697,7 @@ func TestIncrementUint64(t *testing.T) {
 
 func TestIncrementFloat32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float32", float32(1.5), DefaultExpiration)
+	tc.Set("float32", float32(1.5))
 	n, err := tc.IncrementFloat32("float32", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -715,7 +716,7 @@ func TestIncrementFloat32(t *testing.T) {
 
 func TestIncrementFloat64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float64", float64(1.5), DefaultExpiration)
+	tc.Set("float64", float64(1.5))
 	n, err := tc.IncrementFloat64("float64", 2)
 	if err != nil {
 		t.Error("Error incrementing:", err)
@@ -734,8 +735,8 @@ func TestIncrementFloat64(t *testing.T) {
 
 func TestDecrementInt8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int8", int8(5), DefaultExpiration)
-	n, err := tc.DecrementInt8("int8", 2)
+	tc.Set("int8", int8(5))
+	n, err := tc.Decrement("int8", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -753,8 +754,8 @@ func TestDecrementInt8(t *testing.T) {
 
 func TestDecrementInt16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int16", int16(5), DefaultExpiration)
-	n, err := tc.DecrementInt16("int16", 2)
+	tc.Set("int16", int16(5))
+	n, err := tc.Decrement("int16", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -772,8 +773,8 @@ func TestDecrementInt16(t *testing.T) {
 
 func TestDecrementInt32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int32", int32(5), DefaultExpiration)
-	n, err := tc.DecrementInt32("int32", 2)
+	tc.Set("int32", int32(5))
+	n, err := tc.Decrement("int32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -791,8 +792,8 @@ func TestDecrementInt32(t *testing.T) {
 
 func TestDecrementInt64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int64", int64(5), DefaultExpiration)
-	n, err := tc.DecrementInt64("int64", 2)
+	tc.Set("int64", int64(5))
+	n, err := tc.Decrement("int64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -810,7 +811,7 @@ func TestDecrementInt64(t *testing.T) {
 
 func TestDecrementUint(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint", uint(5), DefaultExpiration)
+	tc.Set("uint", uint(5))
 	n, err := tc.DecrementUint("uint", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -829,7 +830,7 @@ func TestDecrementUint(t *testing.T) {
 
 func TestDecrementUintptr(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uintptr", uintptr(5), DefaultExpiration)
+	tc.Set("uintptr", uintptr(5))
 	n, err := tc.DecrementUintptr("uintptr", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -848,7 +849,7 @@ func TestDecrementUintptr(t *testing.T) {
 
 func TestDecrementUint8(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint8", uint8(5), DefaultExpiration)
+	tc.Set("uint8", uint8(5))
 	n, err := tc.DecrementUint8("uint8", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -867,7 +868,7 @@ func TestDecrementUint8(t *testing.T) {
 
 func TestDecrementUint16(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint16", uint16(5), DefaultExpiration)
+	tc.Set("uint16", uint16(5))
 	n, err := tc.DecrementUint16("uint16", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -886,7 +887,7 @@ func TestDecrementUint16(t *testing.T) {
 
 func TestDecrementUint32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint32", uint32(5), DefaultExpiration)
+	tc.Set("uint32", uint32(5))
 	n, err := tc.DecrementUint32("uint32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -905,7 +906,7 @@ func TestDecrementUint32(t *testing.T) {
 
 func TestDecrementUint64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint64", uint64(5), DefaultExpiration)
+	tc.Set("uint64", uint64(5))
 	n, err := tc.DecrementUint64("uint64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
@@ -924,8 +925,8 @@ func TestDecrementUint64(t *testing.T) {
 
 func TestDecrementFloat32(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float32", float32(5), DefaultExpiration)
-	n, err := tc.DecrementFloat32("float32", 2)
+	tc.Set("float32", float32(5))
+	n, err := tc.Decrement("float32", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -943,8 +944,8 @@ func TestDecrementFloat32(t *testing.T) {
 
 func TestDecrementFloat64(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("float64", float64(5), DefaultExpiration)
-	n, err := tc.DecrementFloat64("float64", 2)
+	tc.Set("float64", float64(5))
+	n, err := tc.Decrement("float64", 2)
 	if err != nil {
 		t.Error("Error decrementing:", err)
 	}
@@ -962,7 +963,7 @@ func TestDecrementFloat64(t *testing.T) {
 
 func TestIncrementOverflowInt(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("int8", int8(127), DefaultExpiration)
+	tc.Set("int8", int8(127))
 	err := tc.Increment("int8", 1)
 	if err != nil {
 		t.Error("Error incrementing int8:", err)
@@ -976,7 +977,7 @@ func TestIncrementOverflowInt(t *testing.T) {
 
 func TestIncrementOverflowUint(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint8", uint8(255), DefaultExpiration)
+	tc.Set("uint8", uint8(255))
 	err := tc.Increment("uint8", 1)
 	if err != nil {
 		t.Error("Error incrementing int8:", err)
@@ -990,7 +991,7 @@ func TestIncrementOverflowUint(t *testing.T) {
 
 func TestDecrementUnderflowUint(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("uint8", uint8(0), DefaultExpiration)
+	tc.Set("uint8", uint8(0))
 	err := tc.Decrement("uint8", 1)
 	if err != nil {
 		t.Error("Error decrementing int8:", err)
@@ -1001,3 +1002,4 @@ func TestDecrementUnderflowUint(t *testing.T) {
 		t.Error("uint8 did not underflow as expected; value:", uint8)
 	}
 }
+*/

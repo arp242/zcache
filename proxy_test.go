@@ -27,7 +27,7 @@ func TestProxy(t *testing.T) {
 		}
 	}
 
-	c.SetDefault("k", "vvv")
+	c.Set("k", "vvv")
 	pc.Proxy("k", "p")
 	has(pc.Get("p"))
 	not(pc.Get("k"))

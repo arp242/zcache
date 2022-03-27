@@ -69,7 +69,7 @@ func (p *Proxy) Set(mainKey, proxyKey string, v interface{}) {
 	p.mu.Lock()
 	p.m[proxyKey] = mainKey
 	p.mu.Unlock()
-	p.cache.SetDefault(mainKey, v)
+	p.cache.Set(mainKey, v)
 }
 
 // Get a proxied cache item with zcache.Cache.Get()
