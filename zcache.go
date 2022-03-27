@@ -229,33 +229,37 @@ func (c *cache[K, V]) get(k K) (V, bool) {
 	return item.Object, true
 }
 
-// Modify the value of an existing key; this can be used for appending to a list
-// or setting map keys:
+// Modify the value of an existing key.
 //
-//   zcache.Modify("key", func(v interface{}) interface{} {
-//         vv = v.(map[string]string)
-//         vv["k"] = "v"
-//         return vv
+// For example to increment a number:
+//
+//   cache.Modify("one", func(v int) int { return v + 1 })
+//
+// Or setting a map key:
+//
+//   cache.Modify("key", func(v map[string]string) map[string]string {
+//         v["k"] = "v"
+//         return v
 //   })
 //
 // This is not run for keys that are not set yet; the boolean return indicates
 // if the key was set and if the function was applied.
-func (c *cache[K, V]) Modify(k K, f func(V) V) bool {
+func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
 	if !ok {
-		return false
+		return c.zero(), false
 	}
 	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
-		return false
+		return c.zero(), false
 	}
 
 	item.Object = f(item.Object)
 	c.items[k] = item
-	return true
+	return item.Object, true
 }
 
 // Delete an item from the cache. Does nothing if the key is not in the cache.

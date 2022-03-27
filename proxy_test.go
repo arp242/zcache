@@ -58,7 +58,7 @@ func TestProxy(t *testing.T) {
 		t.Error()
 	}
 
-	pc.Flush()
+	pc.Reset()
 	if len(pc.m) != 0 {
 		t.Error()
 	}

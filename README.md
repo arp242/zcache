@@ -40,6 +40,13 @@ maintained.
   Most of the time you want to use the default expiry time, so make that the
   easier path.
 
+- The `Increment*` and `Decrement*` functions have been removed; you can replace
+  them with `Modify()`:
+
+      cache := New[string, int](DefaultExpiration, 0)
+      cache.Set("one", 1)
+      cache.Modify("one", func(v int) int { return v + 1 })
+
 - Rename `Flush()` to `Reset()`; I think that more clearly conveys what it's
   intended for.
 

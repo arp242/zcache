@@ -432,18 +432,17 @@ func TestModify(t *testing.T) {
 	tc := New[string, []string](DefaultExpiration, 0)
 
 	tc.Set("k", []string{"x"})
-	ok := tc.Modify("k", func(v []string) []string {
+	v, ok := tc.Modify("k", func(v []string) []string {
 		return append(v, "y")
 	})
 	if !ok {
 		t.Error("ok is false")
 	}
-	v, _ := tc.Get("k")
 	if fmt.Sprintf("%v", v) != `[x y]` {
 		t.Errorf("value wrong: %v", v)
 	}
 
-	ok = tc.Modify("doesntexist", func(v []string) []string {
+	_, ok = tc.Modify("doesntexist", func(v []string) []string {
 		t.Error("should not be called")
 		return nil
 	})
@@ -451,13 +450,27 @@ func TestModify(t *testing.T) {
 		t.Error("ok is true")
 	}
 
-	tc.Modify("k", func(v []string) []string { return nil })
-	v, ok = tc.Get("k")
+	v, ok = tc.Modify("k", func(v []string) []string { return nil })
 	if !ok {
 		t.Error("ok not set")
 	}
 	if v != nil {
 		t.Error("v not nil")
+	}
+}
+
+func TestModifyIncrement(t *testing.T) {
+	tc := New[string, int](DefaultExpiration, 0)
+	tc.Set("one", 1)
+
+	have, _ := tc.Modify("one", func(v int) int { return v + 2 })
+	if have != 3 {
+		t.Fatal()
+	}
+
+	have, _ = tc.Modify("one", func(v int) int { return v - 1 })
+	if have != 2 {
+		t.Fatal()
 	}
 }
 
