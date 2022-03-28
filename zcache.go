@@ -1,3 +1,14 @@
+// Package zcache is an in-memory key:value store/cache with time-based evictions.
+//
+// It is suitable for applications running on a single machine. Its major
+// advantage is that it's essentially a thread-safe map with expiration times.
+// Any object can be stored, for a given duration or forever, and the cache can
+// be safely used by multiple goroutines.
+//
+// Although zcache isn't meant to be used as a persistent datastore, the
+// contents can be saved to and loaded from a file (using `c.Items()` to
+// retrieve the items map to serialize, and `NewFrom()` to create a cache from a
+// deserialized one) to recover from downtime quickly.
 package zcache
 
 import (
