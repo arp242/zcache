@@ -8,12 +8,12 @@ import (
 //
 // This is useful if you want to keep a cache which may be accessed by different
 // keys in various different code paths. For example, a "site" may be accessed
-// by ID or by CNAME.
+// by ID or by CNAME. Proxy keys can have a different type than cache keys.
 //
-// Proxies cache entries don't have an expiry and are never automatically
-// deleted, the logic being that the same "proxy → key" mapping should always be
-// valid. The items in the underlying cache can still be expired or deleted, and
-// you can still manually call Delete() or Reset().
+// Proxy keys  don't have an expiry and are never automatically deleted, the
+// logic being that the same "proxy → key" mapping should always be valid. The
+// items in the underlying cache can still be expired or deleted, and you can
+// still manually call Delete() or Reset().
 type Proxy[ProxyK, MainK comparable, V any] struct {
 	cache *Cache[MainK, V]
 	mu    sync.RWMutex
@@ -49,6 +49,8 @@ func (p *Proxy[ProxyK, MainK, V]) Reset() {
 }
 
 // Key gets the main key for this proxied entry, if it exist.
+//
+// The boolean value indicates if this proxy key is set.
 func (p *Proxy[ProxyK, MainK, V]) Key(proxyKey ProxyK) (MainK, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()

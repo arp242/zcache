@@ -579,29 +579,6 @@ func TestDeleteFunc(t *testing.T) {
 	}
 }
 
-func TestItemExpired(t *testing.T) {
-	tc := New[string, any](10*time.Millisecond, NoExpiration)
-	tc.Set("a", "XX")
-	tc.SetWithExpire("b", "YY", NoExpiration)
-
-	items := tc.Items()
-
-	if items["a"].Expired() {
-		t.Fatal("expired too soon")
-	}
-	if items["b"].Expired() {
-		t.Fatal("expired too soon")
-	}
-
-	time.Sleep(11 * time.Millisecond)
-	if !items["a"].Expired() {
-		t.Fatal("not expired")
-	}
-	if items["b"].Expired() {
-		t.Fatal("b expired")
-	}
-}
-
 // Make sure the janitor is stopped after GC frees up.
 func TestFinal(t *testing.T) {
 	has := func() bool {
