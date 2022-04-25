@@ -17,9 +17,9 @@ This is a fork of https://github.com/patrickmn/go-cache – which no longer seem
 actively maintained. There are two versions of zcache:
 
 - v1 is intended to be 100% compatible with co-cache and a drop-in replacement
-  with various enhancements. This uses generics and requires Go 1.18.
+  with various enhancements.
 - v2 makes various incompatible changes to the API: various functions calls are
-  improved, and it utilized generics.
+  improved. This uses generics and requires Go 1.18.
 
 This README documents v2; see README.v1.md for the v1 README. Both versions are
 maintained. See the "changes" section below for a list of changes.
