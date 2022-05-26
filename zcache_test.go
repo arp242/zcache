@@ -597,5 +597,32 @@ func TestFinal(t *testing.T) {
 	if has() {
 		t.Fatal("still have janitor goroutine after GC")
 	}
+}
 
+func TestRename(t *testing.T) {
+	tc := New[string, int](NoExpiration, 0)
+	tc.Set("foo", 3)
+	tc.SetWithExpire("bar", 4, 1)
+
+	if tc.Rename("nonex", "asd") {
+		t.Error()
+	}
+	if tc.Rename("bar", "expired") {
+		t.Error()
+	}
+	if v, _, ok := tc.GetStale("bar"); !ok || v != 4 {
+		t.Error()
+	}
+
+	if !tc.Rename("foo", "RENAME") {
+		t.Error()
+	}
+
+	if v, ok := tc.Get("RENAME"); !ok || v != 3 {
+		t.Error()
+	}
+
+	if _, ok := tc.Get("foo"); ok {
+		t.Error()
+	}
 }
