@@ -350,6 +350,29 @@ func (c *cache) Delete(k string) {
 	}
 }
 
+// Rename a key; the value and expiry will be left untouched; onEvicted will not
+// be called.
+//
+// Existing keys will be overwritten; returns false is the src key doesn't
+// exist.
+func (c *cache) Rename(src, dst string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// "Inlining" of get and Expired
+	item, ok := c.items[src]
+	if !ok {
+		return false
+	}
+	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+		return false
+	}
+
+	delete(c.items, src)
+	c.items[dst] = item
+	return true
+}
+
 // Pop gets an item from the cache and deletes it.
 func (c *cache) Pop(k string) (interface{}, bool) {
 	c.mu.Lock()

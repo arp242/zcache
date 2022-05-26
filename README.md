@@ -160,6 +160,7 @@ All these changes are in both v1 and v2:
 - Add `Modify()` to atomically modify existing cache entries (e.g. lists, maps).
 - Add `DeleteAll()` to remove all items from the cache with onEvicted call.
 - Add `DeleteFunc()` to remove specific items from the cache atomically.
+- Add `Rename()` to rename keys, retaining the value and expiry.
 - Add `Proxy` type, to access cache items under a different key.
 - Various small internal and documentation improvements.
 

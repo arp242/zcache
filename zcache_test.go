@@ -648,7 +648,7 @@ func TestItems(t *testing.T) {
 	tc.Set("bar", "2", DefaultExpiration)
 	tc.Set("baz", "3", DefaultExpiration)
 	tc.Set("exp", "4", 1)
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 	if n := tc.ItemCount(); n != 3 {
 		t.Errorf("Item count is not 3: %d", n)
 	}
@@ -744,5 +744,33 @@ func TestDeleteFunc(t *testing.T) {
 
 	if tc.ItemCount() != count-1 {
 		t.Errorf("unexpected number of items in the cache. item count expected %d, found %d", count-1, tc.ItemCount())
+	}
+}
+
+func TestRename(t *testing.T) {
+	tc := New(NoExpiration, 0)
+	tc.Set("foo", 3, DefaultExpiration)
+	tc.Set("bar", 4, 1)
+
+	if tc.Rename("nonex", "asd") {
+		t.Error()
+	}
+	if tc.Rename("bar", "expired") {
+		t.Error()
+	}
+	if v, _, ok := tc.GetStale("bar"); !ok || v != 4 {
+		t.Error()
+	}
+
+	if !tc.Rename("foo", "RENAME") {
+		t.Error()
+	}
+
+	if v, ok := tc.Get("RENAME"); !ok || v != 3 {
+		t.Error()
+	}
+
+	if _, ok := tc.Get("foo"); ok {
+		t.Error()
 	}
 }
