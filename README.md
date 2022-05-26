@@ -10,19 +10,21 @@ can be saved to and loaded from a file (using `c.Items()` to retrieve the items
 map to serialize, and `NewFrom()` to create a cache from a deserialized one) to
 recover from downtime quickly.
 
-The canonical import path is `zgo.at/zcache`, and reference docs are at
+The canonical import path is `zgo.at/zcache/v2`, or `zgo.zcache` for the v1.
+Reference docs are at https://godocs.io/zgo.at/zcache/v2 and
 https://godocs.io/zgo.at/zcache
 
 This is a fork of https://github.com/patrickmn/go-cache – which no longer seems
-actively maintained. There are two versions of zcache:
+actively maintained. There are two versions of zcache, both of which are
+maintained:
 
-- v1 is intended to be 100% compatible with co-cache and a drop-in replacement
-  with various enhancements.
-- v2 makes various incompatible changes to the API: various functions calls are
-  improved. This uses generics and requires Go 1.18.
+- v1 is 100% compatible with go-cache and a drop-in replacement with various
+  enhancements.
+- v2 makes various incompatible changes to the API; some functions calls are
+  improved and uses generics, which requires Go 1.18.
 
-This README documents v2; see README.v1.md for the v1 README. Both versions are
-maintained. See the "changes" section below for a list of changes.
+**This README documents v2; see [README.v1.md](/README.v1.md) for the v1
+README.** See the "changes" section below for a list of changes.
 
 Usage
 -----
