@@ -1,16 +1,15 @@
 zcache is an in-memory key:value store/cache with time-based evictions.
 
-It is suitable for applications running on a single machine. Its major advantage
-is that it's essentially a thread-safe map with expiration times. Any object can
-be stored, for a given duration or forever, and the cache can be safely used by
-multiple goroutines.
+It is suitable for applications running on a single machine. It's essentially a
+thread-safe map with expiration times. Any object can be stored, for a given
+duration or forever, and the cache can be safely used by multiple goroutines.
 
 Although zcache isn't meant to be used as a persistent datastore, the contents
 can be saved to and loaded from a file (using `c.Items()` to retrieve the items
 map to serialize, and `NewFrom()` to create a cache from a deserialized one) to
 recover from downtime quickly.
 
-The canonical import path is `zgo.at/zcache/v2`, or `zgo.zcache` for the v1.
+The canonical import path is `zgo.at/zcache/v2`, or `zgo.at/zcache` for the v1.
 Reference docs are at https://godocs.io/zgo.at/zcache/v2 and
 https://godocs.io/zgo.at/zcache
 
@@ -21,7 +20,7 @@ maintained:
 - v1 is 100% compatible with go-cache and a drop-in replacement with various
   enhancements.
 - v2 makes various incompatible changes to the API; some functions calls are
-  improved and uses generics, which requires Go 1.18.
+  improved and it uses generics, which requires Go 1.18.
 
 **This README documents v2; see [README.v1.md](/README.v1.md) for the v1
 README.** See the "changes" section below for a list of changes.
