@@ -1,9 +1,9 @@
 zcache is an in-memory key:value store/cache with time-based evictions.
 
-It is suitable for applications running on a single machine. Its major advantage
-is that it's essentially a thread-safe `map[string]interface{}` with expiration
-times. Any object can be stored, for a given duration or forever, and the cache
-can be safely used by multiple goroutines.
+It is suitable for applications running on a single machine. It's essentially a
+thread-safe `map[string]interface{}` with expiration times. Any object can be
+stored, for a given duration or forever, and the cache can be safely used by
+multiple goroutines.
 
 Although zcache isn't meant to be used as a persistent datastore, the entire
 cache can be saved to and loaded from a file (using `c.Items()` to retrieve the
