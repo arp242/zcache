@@ -278,14 +278,14 @@ func (c *cache[K, V]) GetWithExpire(k K) (V, time.Time, bool) {
 //
 // This is thread-safe; for example to increment a number:
 //
-//   cache.Modify("one", func(v int) int { return v + 1 })
+//	cache.Modify("one", func(v int) int { return v + 1 })
 //
 // Or setting a map key:
 //
-//   cache.Modify("key", func(v map[string]string) map[string]string {
-//         v["k"] = "v"
-//         return v
-//   })
+//	cache.Modify("key", func(v map[string]string) map[string]string {
+//	      v["k"] = "v"
+//	      return v
+//	})
 //
 // This is thread-safe and can be safely run by multiple goroutines modifying
 // the same key. If you would use Get() + Set() then two goroutines may Get()
