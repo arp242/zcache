@@ -227,6 +227,56 @@ func (c *cache[K, V]) Get(k K) (V, bool) {
 	return item.Object, true
 }
 
+// Get multiple items from the cache.
+// More efficient for large amounts of keys.
+//
+// Returns 2 slices with equal length.
+// The first slice contains the values retrieved of the cache.
+// The second slice contains boolean values that indicate if that index was a cachemiss.
+func (c *cache[K, V]) MultiGet(keys ...K) ([]V, []bool) {
+	c.mu.RLock()
+
+	var values []V = make([]V, 0, len(keys))
+	var exists []bool = make([]bool, 0, len(keys))
+
+	for _, key := range keys {
+		// "Inlining" of get and Expired
+		item, ok := c.items[key]
+		if !ok {
+			values = append(values, c.zero())
+			exists = append(exists, false)
+			continue
+		}
+		if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+			values = append(values, c.zero())
+			exists = append(exists, false)
+			continue
+		}
+		values = append(values, item.Object)
+		exists = append(exists, true)
+	}
+	c.mu.RUnlock()
+	return values, exists
+}
+
+// Set multiple items in the cache.
+// More efficient for large amounts of values.
+//
+// Keys and values are matched through the index.
+// If the end of either slice is reached, the methods ends.
+func (c *cache[K, V]) MultiSet(keys []K, values []V) {
+	c.mu.Lock()
+	maxV := len(values)
+	for i, key := range keys {
+		if maxV <= i {
+			break
+		}
+		value := values[i]
+		c.set(key, value, c.defaultExpiration)
+	}
+	c.mu.Unlock()
+}
+
 // GetStale gets an item from the cache without checking if it's expired.
 //
 // Returns the item or the zero value and a bool indicating whether the key was
