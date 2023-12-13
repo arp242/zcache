@@ -18,6 +18,88 @@ func benchmarkGet(b *testing.B, exp time.Duration) {
 	}
 }
 
+func BenchmarkGetMulti(b *testing.B) {
+	keys := []string{
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+		"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe",
+	}
+	tc := New[string, any](0, 0)
+	tc.Set("foo", "bar")
+	tc.Set("bar", "barzxc")
+	tc.Set("asd", "barzxc")
+
+	b.Run("get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, k := range keys {
+				tc.Get(k)
+			}
+		}
+	})
+	b.Run("mget", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			tc.Mget(keys...)
+		}
+	})
+}
+
 func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 	b.StopTimer()
 	tc := New[string, any](exp, 0)

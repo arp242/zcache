@@ -208,6 +208,43 @@ func (c *cache[K, V]) ReplaceWithExpire(k K, v V, d time.Duration) error {
 	return nil
 }
 
+func (c *cache[K, V]) Mget(k ...K) []struct {
+	v  V
+	ok bool
+} {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	ret := make([]struct {
+		v  V
+		ok bool
+	}, 0, len(k))
+
+	for _, kk := range k {
+		// "Inlining" of get and Expired
+		item, ok := c.items[kk]
+		if !ok {
+			ret = append(ret, struct {
+				v  V
+				ok bool
+			}{c.zero(), false})
+			continue
+		}
+		if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+			ret = append(ret, struct {
+				v  V
+				ok bool
+			}{c.zero(), false})
+			continue
+		}
+		ret = append(ret, struct {
+			v  V
+			ok bool
+		}{item.Object, true})
+	}
+	return ret
+}
+
 // Get an item from the cache.
 //
 // Returns the item or the zero value and a bool indicating whether the key is
