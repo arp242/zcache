@@ -208,6 +208,22 @@ func (c *cache[K, V]) ReplaceWithExpire(k K, v V, d time.Duration) error {
 	return nil
 }
 
+// Set multiple items in the cache.
+// More efficient for large amounts of values.
+//
+// Keys and values are matched through the index.
+// If the end of either slice is reached, the methods ends.
+func (c *cache[K, V]) MultiSet(vals ...struct {
+	k K
+	v V
+}) {
+	c.mu.Lock()
+	for _, v := range vals {
+		c.set(v.k, v.v, c.defaultExpiration)
+	}
+	c.mu.Unlock()
+}
+
 func (c *cache[K, V]) Mget(k ...K) []struct {
 	v  V
 	ok bool
@@ -243,6 +259,32 @@ func (c *cache[K, V]) Mget(k ...K) []struct {
 		}{item.Object, true})
 	}
 	return ret
+}
+
+func (c *cache[K, V]) MultiGet(keys ...K) ([]V, []bool) {
+	c.mu.RLock()
+
+	var values []V = make([]V, 0, len(keys))
+	var exists []bool = make([]bool, 0, len(keys))
+
+	for _, key := range keys {
+		// "Inlining" of get and Expired
+		item, ok := c.items[key]
+		if !ok {
+			values = append(values, c.zero())
+			exists = append(exists, false)
+			continue
+		}
+		if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+			values = append(values, c.zero())
+			exists = append(exists, false)
+			continue
+		}
+		values = append(values, item.Object)
+		exists = append(exists, true)
+	}
+	c.mu.RUnlock()
+	return values, exists
 }
 
 // Get an item from the cache.

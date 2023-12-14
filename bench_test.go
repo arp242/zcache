@@ -98,6 +98,11 @@ func BenchmarkGetMulti(b *testing.B) {
 			tc.Mget(keys...)
 		}
 	})
+	b.Run("mget2", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			tc.MultiGet(keys...)
+		}
+	})
 }
 
 func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
