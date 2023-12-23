@@ -196,3 +196,71 @@ func BenchmarkDeleteExpiredLoop(b *testing.B) {
 		tc.DeleteExpired()
 	}
 }
+
+func repeat(n int, s ...string) []string {
+	r := make([]string, 0, len(s)*n)
+	for i := 0; i < n; i++ {
+		r = append(r, s...)
+	}
+	return r
+}
+
+func BenchmarkKS(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		tc := New[string, any](0, 0)
+		tc.Set("foo", "bar")
+		tc.Set("bar", "barzxc")
+		tc.Set("asd", "barzxc")
+
+		do := func(b *testing.B, keys []string) {
+			b.Run("one", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					for _, k := range keys {
+						tc.Get(k)
+					}
+				}
+			})
+			b.Run("mul", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					tc.Keyset(keys...).Get()
+				}
+			})
+		}
+
+		s := []string{"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe"}
+		b.Run("0", func(b *testing.B) { do(b, []string{}) })
+		b.Run("10", func(b *testing.B) { do(b, repeat(1, s...)) })
+		b.Run("50", func(b *testing.B) { do(b, repeat(5, s...)) })
+		b.Run("100", func(b *testing.B) { do(b, repeat(10, s...)) })
+		b.Run("500", func(b *testing.B) { do(b, repeat(50, s...)) })
+		b.Run("1000", func(b *testing.B) { do(b, repeat(100, s...)) })
+	})
+
+	b.Run("Set", func(b *testing.B) {
+		tc := New[string, string](0, 0)
+
+		do := func(b *testing.B, keys []string, vals []string) {
+			b.Run("one", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					for _, k := range keys {
+						tc.Set(k, "test value")
+					}
+				}
+			})
+			b.Run("mul", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					tc.Keyset(keys...).Set(vals...)
+				}
+			})
+		}
+
+		s := []string{"foo", "bar", "baz", "asd", "zcx", "qwe", "fdg", "zxcz", "asdsada", "qweqewqe"}
+		vals := repeat(10, "test value")
+		b.Run("0", func(b *testing.B) { do(b, []string{}, []string{}) })
+		b.Run("10", func(b *testing.B) { do(b, repeat(1, s...), repeat(1, vals...)) })
+		b.Run("50", func(b *testing.B) { do(b, repeat(5, s...), repeat(5, vals...)) })
+		b.Run("100", func(b *testing.B) { do(b, repeat(10, s...), repeat(10, vals...)) })
+		b.Run("500", func(b *testing.B) { do(b, repeat(50, s...), repeat(50, vals...)) })
+		b.Run("1000", func(b *testing.B) { do(b, repeat(100, s...), repeat(100, vals...)) })
+	})
+}
