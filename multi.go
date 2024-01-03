@@ -66,6 +66,15 @@ func (m *Keyset[K, V]) Keys() []K {
 	return m.keys
 }
 
+// Index gets the nth key.
+//
+// Will panic if i is out of range.
+func (m *Keyset[K, V]) Index(i int) K {
+	m.cache.mu.RLock()
+	defer m.cache.mu.RUnlock()
+	return m.keys[i]
+}
+
 // Append new keys to this keyset.
 func (m *Keyset[K, V]) Append(k ...K) {
 	m.cache.mu.Lock()

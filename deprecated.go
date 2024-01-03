@@ -10,28 +10,14 @@ package zcache
 // Deprecated: Keyset can be used to operate on multiple values. For example
 // mycache.Find(func(...) { ... }).Delete()
 func (c *cache[K, V]) DeleteFunc(filter func(key K, item Item[V]) (del, stop bool)) map[K]Item[V] {
-	c.mu.Lock()
+	keys := c.Find(filter)
 	m := map[K]Item[V]{}
-	for k, v := range c.items {
-		del, stop := filter(k, v)
-		if del {
-			m[k] = Item[V]{
-				Object:     v.Object,
-				Expiration: v.Expiration,
-			}
-			c.delete(k)
-		}
-		if stop {
-			break
-		}
+	for i, item := range keys.Get() {
+		// Note this isn't the same as before – we don't have access to
+		// Expiration. That's probably okay; it was a mistake this was exposed
+		// in the first place.
+		m[keys.Index(i)] = Item[V]{Object: item.V}
 	}
-	c.mu.Unlock()
-
-	if c.onEvicted != nil {
-		for k, v := range m {
-			c.onEvicted(k, v.Object)
-		}
-	}
-
+	keys.Delete()
 	return m
 }
