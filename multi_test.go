@@ -2,6 +2,7 @@ package zcache_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -21,13 +22,92 @@ func ExampleCache_Keyset() {
 
 func TestKeyset(t *testing.T) {
 	c := zcache.New[string, string](5*time.Minute, 10*time.Minute)
+	var evicted [][2]string
+	c.OnEvicted(func(k, v string) {
+		evicted = append(evicted, [2]string{k, v})
+	})
 	c.Set("key1", "one")
 	c.Set("key2", "two")
-
+	c.SetWithExpire("key3", "two", 1)
 	keys := c.Keyset("key1", "key2", "not set")
-	for _, k := range keys.Get() {
-		_ = k
-		//fmt.Println(k)
+
+	{
+		have := fmt.Sprintf("%v", keys.Get())
+		want := `[{one true} {two true} { false}]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+	{
+		have := fmt.Sprintf("%v", c.Keyset("key1", "key2", "key3").Get())
+		want := `[{one true} {two true} { false}]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+
+	{
+		c.Keyset("key2", "not set").Delete()
+		have := fmt.Sprintf("%v", keys.Get())
+		want := `[{one true} { false} { false}]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+		have = fmt.Sprintf("%v", evicted)
+		want = `[[key2 two]]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+
+	{
+		c.Keyset("new1", "new2").Set("x", "y")
+		keys.Append("new1", "new2")
+		have := fmt.Sprintf("%v", keys.Get())
+		want := `[{one true} { false} { false} {x true} {y true}]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+
+	{
+		keys.Reset()
+		have := fmt.Sprintf("%v", keys.Get())
+		want := `[]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+
+	{
+		keys := c.Find(func(k string, v zcache.Item[string]) (bool, bool) {
+			return false, false
+		})
+		have := fmt.Sprintf("%v", keys.Keys())
+		want := `[]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+	{
+		keys := c.Find(func(k string, v zcache.Item[string]) (bool, bool) {
+			return true, false
+		})
+		kk := keys.Keys()
+		slices.Sort(kk)
+		have := fmt.Sprintf("%v", kk)
+		want := `[key1 key3 new1 new2]`
+		if have != want {
+			t.Errorf("\nhave: %s\nwant: %s", have, want)
+		}
+	}
+	{
+		keys := c.Find(func(k string, v zcache.Item[string]) (bool, bool) {
+			return true, true
+		})
+		if l := len(keys.Keys()); l != 1 {
+			t.Errorf("len not 1: %d", l)
+		}
 	}
 }
 

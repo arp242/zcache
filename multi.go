@@ -1,7 +1,6 @@
 package zcache
 
 import (
-	"sync"
 	"time"
 )
 
@@ -9,9 +8,8 @@ type (
 	// A Keyset is a set of keys for a Cache. All operations are run on the keys
 	// in the set.
 	Keyset[K comparable, V any] struct {
-		mu    sync.RWMutex
 		cache *cache[K, V]
-		keys  []K
+		keys  []K // Protected by cache.mu
 	}
 	multiRet[V any] struct {
 		V  V
@@ -34,39 +32,51 @@ func (c *cache[K, V]) Keyset(k ...K) *Keyset[K, V] {
 	return &Keyset[K, V]{cache: c, keys: k}
 }
 
-// Glob returns all keys matching the pattern.
-func (c *cache[K, V]) Glob(patt string) *Keyset[K, V] {
-	return &Keyset[K, V]{cache: c} // TODO: implement.
-}
-
 // Find keys with a function callback.
 //
 // The item will be included if the callback's first return argument is true.
 // The loop will stop if the second return argument is true.
-func (c *cache[K, V]) Find(filter func(key K, item Item[V]) (del, stop bool)) *Keyset[K, V] {
-	return &Keyset[K, V]{cache: c} // TODO: implement.
+//
+// Iteration order is not defined.
+func (c *cache[K, V]) Find(filter func(key K, item Item[V]) (incl, stop bool)) *Keyset[K, V] {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	keys := make([]K, 0, 8)
+	for k, v := range c.items {
+		incl, stop := filter(k, v)
+		if incl {
+			keys = append(keys, k)
+		}
+		if stop {
+			break
+		}
+	}
+	return &Keyset[K, V]{cache: c, keys: keys}
 }
 
 // Keyset methods.
 
 // Keys returns all keys in this keyset.
+//
+// Keys are returned in the order they were defined.
 func (m *Keyset[K, V]) Keys() []K {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.cache.mu.RLock()
+	defer m.cache.mu.RUnlock()
 	return m.keys
 }
 
 // Append new keys to this keyset.
 func (m *Keyset[K, V]) Append(k ...K) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.cache.mu.Lock()
+	defer m.cache.mu.Unlock()
 	m.keys = append(m.keys, k...)
 }
 
 // Reset this keyset to zero keys.
 func (m *Keyset[K, V]) Reset() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.cache.mu.Lock()
+	defer m.cache.mu.Unlock()
 	m.keys = make([]K, 0, 16)
 }
 
@@ -94,12 +104,22 @@ func (m *Keyset[K, V]) Get() []multiRet[V] {
 	}
 	return ret
 }
+
 func (m *Keyset[K, V]) GetStale() []staleRet[V]                            { return nil }
 func (m *Keyset[K, V]) GetWithExpire() []expireRet[V]                      { return nil }
 func (m *Keyset[K, V]) Touch() []multiRet[V]                               { return nil }
 func (m *Keyset[K, V]) TouchWithExpire(k K, d time.Duration) []multiRet[V] { return nil }
-func (m *Keyset[K, V]) Delete()                                            {}
-func (m *Keyset[K, V]) Pop() []multiRet[V]                                 { return nil }
+func (m *Keyset[K, V]) Delete() {
+	m.cache.mu.RLock()
+	defer m.cache.mu.RUnlock()
+	for _, k := range m.keys {
+		v, evicted := m.cache.delete(k)
+		if evicted {
+			m.cache.onEvicted(k, v)
+		}
+	}
+}
+func (m *Keyset[K, V]) Pop() []multiRet[V] { return nil }
 
 // Setting and modifying values.
 //
@@ -124,6 +144,7 @@ func (m *Keyset[K, V]) Set(v ...V) {
 		m.cache.set(k, v[i], m.cache.defaultExpiration)
 	}
 }
+
 func (m *Keyset[K, V]) SetWithExpire(d time.Duration, v ...V)           {}
 func (m *Keyset[K, V]) Add(v ...V) error                                { return nil }
 func (m *Keyset[K, V]) AddWithExpire(d time.Duration, v ...V) error     { return nil }
