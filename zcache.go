@@ -218,11 +218,11 @@ func (c *cache) get(k string) (interface{}, bool) {
 // Modify the value of an existing key; this can be used for appending to a list
 // or setting map keys:
 //
-//   zcache.Modify("key", func(v interface{}) interface{} {
-//         vv = v.(map[string]string)
-//         vv["k"] = "v"
-//         return vv
-//   })
+//	zcache.Modify("key", func(v interface{}) interface{} {
+//	      vv = v.(map[string]string)
+//	      vv["k"] = "v"
+//	      return vv
+//	})
 //
 // This is not run for keys that are not set yet; the boolean return indicates
 // if the key was set and if the function was applied.
