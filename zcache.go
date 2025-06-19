@@ -420,6 +420,31 @@ func (c *cache[K, V]) Items() map[K]Item[V] {
 	return m
 }
 
+// ItemsAny returns all items, like [Items], but untyped.
+//
+// This can be useful in some cases where you want to iterate over multiple
+// caches, for example for debugging, so you can assign them to a generic
+// interface:
+//
+//	interface {
+//	   ItemsAny() map[any]zcache.Item[any]
+//	}
+func (c *cache[K, V]) ItemsAny() map[any]Item[any] {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	m := make(map[any]Item[any], len(c.items))
+	now := time.Now().UnixNano()
+	for k, v := range c.items {
+		// "Inlining" of Expired
+		if v.Expiration > 0 && now > v.Expiration {
+			continue
+		}
+		m[k] = Item[any]{Object: v.Object, Expiration: v.Expiration}
+	}
+	return m
+}
+
 // Keys gets a list of all keys, in no particular order.
 func (c *cache[K, V]) Keys() []K {
 	c.mu.RLock()
