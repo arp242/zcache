@@ -602,27 +602,28 @@ func TestFinal(t *testing.T) {
 func TestRename(t *testing.T) {
 	tc := New[string, int](NoExpiration, 0)
 	tc.Set("foo", 3)
-	tc.SetWithExpire("bar", 4, 1)
+	tc.SetWithExpire("bar", 4, time.Nanosecond)
+	time.Sleep(time.Nanosecond)
 
 	if tc.Rename("nonex", "asd") {
-		t.Error()
+		t.Error("nonex reported as existing")
 	}
 	if tc.Rename("bar", "expired") {
-		t.Error()
+		t.Error("bar reported as existing (should be expired)")
 	}
-	if v, _, ok := tc.GetStale("bar"); !ok || v != 4 {
-		t.Error()
+	if v, exp, ok := tc.GetStale("bar"); !ok || v != 4 {
+		t.Errorf(`GetStale("Bar"): v=%v; exp=%v; ok=%v`, v, exp, ok)
 	}
 
 	if !tc.Rename("foo", "RENAME") {
-		t.Error()
+		t.Error(`rename "foo" to "RENAME" failed`)
 	}
 
 	if v, ok := tc.Get("RENAME"); !ok || v != 3 {
-		t.Error()
+		t.Errorf(`Get("RENAME"): v=%v; ok=%v`, v, ok)
 	}
 
-	if _, ok := tc.Get("foo"); ok {
-		t.Error()
+	if v, ok := tc.Get("foo"); ok {
+		t.Errorf(`Get("foo"): v=%v; ok=%v`, v, ok)
 	}
 }
