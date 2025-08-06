@@ -594,6 +594,7 @@ func TestFinal(t *testing.T) {
 		t.Fatal("no janitor goroutine before GC")
 	}
 	runtime.GC()
+	time.Sleep(10 * time.Millisecond)
 	if has() {
 		t.Fatal("still have janitor goroutine after GC")
 	}
