@@ -29,7 +29,7 @@ or issue that was reported should be resolved.
   I didn't use `GetItem()` or `GetCacheItem()` as I felt that it should be clear
   from the name you're getting potentially expired items.
 
-  Potentually, a `GetStaleWithExpiration()` could be added too; but I'm not sure
+  Potentially, a `GetStaleWithExpiration()` could be added too; but I'm not sure
   how valuable that is.
 
 - [Add Iterate by youjianglong](https://github.com/patrickmn/go-cache/pull/78)<br>
@@ -40,11 +40,13 @@ or issue that was reported should be resolved.
   a `Keys()` method to return an (unsorted) list of keys.
 
 - [Add Map function (Read/Replace) in single lock](https://github.com/patrickmn/go-cache/issues/118)<br>
-  [added atomic list-append operation by sgeisbacher](https://github.com/patrickmn/go-cache/pull/97)
+  [added atomic list-append operation by sgeisbacher](https://github.com/patrickmn/go-cache/pull/97)<br>
+  [Add function which increase int64 or set in cache if not exists yet by oskarwojciski](https://github.com/patrickmn/go-cache/pull/62)
 
   Both of these issues are essentially the same: the ability to atomically
   modify existing values. Instead of adding a []string-specific implementation a
-  generic Modify() seems better to me, so add that.
+  generic Modify() seems better to me, so add that. Also add ModifySet() for PR
+  62 ("set in cache if not exists"), which is only in v2.
 
 - [Add remove method, if key exists, delete and return elements by yinbaoqiang](https://github.com/patrickmn/go-cache/pull/77)<br>
 
@@ -75,7 +77,7 @@ open an issue if you feel I made a mistake and we can look at it again :-)
   for the UX of such a callback, since it's kind of a "action at a distance"
   thing.
   
-  This could be solved with [`zsync.Once`]([zstd/once.go at master](https://github.com/zgoat/zstd/blob/master/zsync/once.go#L6)) though,
+  This could be solved with [`zsync.Once`](https://github.com/zgoat/zstd/blob/master/zsync/once.go#L6) though,
   then only subsequent GetOrSet calls will block. The downside is that is that
   keys may still be modified with Set() and other functions while this is
   running. I'm not sure if that's a big enough of an issue.
@@ -117,11 +119,6 @@ open an issue if you feel I made a mistake and we can look at it again :-)
 
   Unclear use case; although passing the Item instead of value to OnEvicted()
   wouldn't be a bad idea (but incompatible).
-
-- [Add function which increase int64 or set in cache if not exists yet by oskarwojciski](https://github.com/patrickmn/go-cache/pull/62)<br>
-
-  This makes the entire increment/decrement stuff even worse; need to rethink
-  that entire API. An option to set it if it doesn't exist would be better.
 
 - [Changing RWMutexMap to sync.Map by vidmed](https://github.com/patrickmn/go-cache/pull/72)<br>
 

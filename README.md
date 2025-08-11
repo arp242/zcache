@@ -14,11 +14,11 @@ Reference docs are at https://godocs.io/zgo.at/zcache/v2 and
 https://godocs.io/zgo.at/zcache
 
 This is a fork of https://github.com/patrickmn/go-cache – which no longer seems
-actively maintained. There are two versions of zcache, both of which are
-maintained:
+actively maintained. There are two versions of zcache:
 
 - v1 is 100% compatible with go-cache and a drop-in replacement with various
-  enhancements.
+  enhancements. As of 2025 this is only maintained for bugfixes, and not new
+  features.
 - v2 makes various incompatible changes to the API; some functions calls are
   improved and it uses generics, which requires Go 1.18.
 
