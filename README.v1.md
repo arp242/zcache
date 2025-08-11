@@ -20,8 +20,8 @@ This is a fork of https://github.com/patrickmn/go-cache – which no longer seem
 actively maintained. v1 is intended to be 100% compatible and a drop-in
 replacement.
 
-See [issue-list.markdown](/issue-list.markdown) for a complete run-down of the
-PRs/issues for go-cache and what was and wasn't included; in short:
+See [issue-list.md](/issue-list.md) for a complete run-down of the PRs/issues
+for go-cache and what was and wasn't included; in short:
 
 - Add `Keys()` to list all keys.
 - Add `Touch()` to update the expiry on an item.

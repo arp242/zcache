@@ -457,6 +457,17 @@ func TestModify(t *testing.T) {
 	if v != nil {
 		t.Error("v not nil")
 	}
+
+	tc = New[string, []string](1, 0)
+	tc.Set("expired", []string{"x"})
+	time.Sleep(time.Nanosecond)
+	_, ok = tc.Modify("expired", func(v []string) []string {
+		t.Error("should not be called")
+		return nil
+	})
+	if ok {
+		t.Error("ok is true")
+	}
 }
 
 func TestModifyIncrement(t *testing.T) {
@@ -470,6 +481,110 @@ func TestModifyIncrement(t *testing.T) {
 
 	have, _ = tc.Modify("one", func(v int) int { return v - 1 })
 	if have != 2 {
+		t.Fatal()
+	}
+}
+
+func TestModifySet(t *testing.T) {
+	tc := New[string, []string](DefaultExpiration, 0)
+
+	tc.Set("k", []string{"x"})
+	v, ok := tc.ModifySet("k", func(v []string, ok bool) []string {
+		if !ok {
+			t.Error("ok is false")
+		}
+		return append(v, "y")
+	})
+	if fmt.Sprintf("%v", v) != `[x y]` {
+		t.Errorf("value wrong: %v", v)
+	}
+	if !ok {
+		t.Error("ok false")
+	}
+
+	v, ok = tc.ModifySet("doesntexist", func(v []string, ok bool) []string {
+		if ok {
+			t.Error("ok is true")
+		}
+		return nil
+	})
+	if v != nil {
+		t.Errorf("v not nil: %v", v)
+	}
+	if ok {
+		t.Error("ok true")
+	}
+
+	v, ok = tc.ModifySet("doesntexist", func(v []string, ok bool) []string {
+		if !ok {
+			t.Error("ok is false")
+		}
+		return nil
+	})
+	if v != nil {
+		t.Errorf("v not nil: %v", v)
+	}
+	if !ok {
+		t.Error("ok false")
+	}
+	v, ok = tc.Get("doesntexist")
+	if !ok {
+		t.Error("ok is false")
+	}
+	if v != nil {
+		t.Errorf("v not nil: %v", v)
+	}
+	v, ok = tc.ModifySet("doesntexist", func(v []string, ok bool) []string {
+		return nil
+	})
+	if !ok {
+		t.Error("ok false")
+	}
+	if v != nil {
+		t.Errorf("v not nil: %v", v)
+	}
+	v, ok = tc.Get("doesntexist")
+	if !ok {
+		t.Error("ok is false")
+	}
+	if v != nil {
+		t.Errorf("v not nil: %v", v)
+	}
+
+	tc = New[string, []string](1, 0)
+	tc.Set("expired", []string{"x"})
+	time.Sleep(time.Nanosecond)
+	v, ok = tc.ModifySet("expired", func(v []string, ok bool) []string {
+		if ok {
+			t.Error("ok is true")
+		}
+		return []string{"a", "b"}
+	})
+	if fmt.Sprintf("%v", v) != `[a b]` {
+		t.Errorf("value wrong: %v", v)
+	}
+	if ok {
+		t.Error("ok true")
+	}
+}
+
+func TestModifySetIncrement(t *testing.T) {
+	tc := New[string, int](DefaultExpiration, 0)
+	tc.Set("one", 1)
+
+	have, ok := tc.ModifySet("one", func(v int, ok bool) int { return v + 2 })
+	if have != 3 {
+		t.Fatal()
+	}
+	if !ok {
+		t.Fatal()
+	}
+
+	have, ok = tc.ModifySet("one", func(v int, ok bool) int { return v - 1 })
+	if have != 2 {
+		t.Fatal()
+	}
+	if !ok {
 		t.Fatal()
 	}
 }

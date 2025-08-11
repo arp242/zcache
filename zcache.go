@@ -291,24 +291,56 @@ func (c *cache[K, V]) GetWithExpire(k K) (V, time.Time, bool) {
 // the same key. If you would use Get() + Set() then two goroutines may Get()
 // the same value and the modification of one of them will be lost.
 //
-// This is not run for keys that are not set yet; the boolean return indicates
-// if the key was set and if the function was applied.
+// This is not run for keys that are not yet set; the boolean return indicates
+// if the key was set and if the function was run. See [ModifySet] for a variant
+// that will also set the key.
 func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
-	if !ok {
-		return c.zero(), false
-	}
-	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
+	if !ok || (item.Expiration > 0 && time.Now().UnixNano() > item.Expiration) {
 		return c.zero(), false
 	}
 
 	item.Object = f(item.Object)
 	c.items[k] = item
 	return item.Object, true
+}
+
+// ModifySet modifies the value of a key. This is similar to [Modify], but also
+// sets keys that don't exist yet or are expired.
+//
+// v will be set to the zero value if the key isn't set yet; the boolean
+// argument indicates if the key exists. For example to increment only existing
+// keys:
+//
+//	newval, ok := cache.ModifySet("n", func(v int, exists bool) int {
+//	    if !exists {
+//	        return 0, true
+//	    }
+//	    return v + 1, true
+//	})
+//
+// Like [Modify], it returns the new value and whether the key was set (past
+// tense: the key will always be set after calling ModifySet).
+func (c *cache[K, V]) ModifySet(k K, f func(V, bool) V) (V, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// "Inlining" of get and Expired
+	item, ok := c.items[k]
+	if !ok || (item.Expiration > 0 && time.Now().UnixNano() > item.Expiration) {
+		ok = false
+	}
+
+	item.Object = f(item.Object, ok)
+	if ok {
+		c.delete(k)
+	}
+	c.items[k] = item
+	return item.Object, ok
 }
 
 // Delete an item from the cache. Does nothing if the key is not in the cache.
