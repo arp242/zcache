@@ -165,8 +165,8 @@ All these changes are in both v1 and v2:
 - Add `Proxy` type, to access cache items under a different key.
 - Various small internal and documentation improvements.
 
-See [issue-list.markdown](/issue-list.markdown) for a complete run-down of the
-PRs/issues for go-cache and what was and wasn't included.
+See [issue-list.md](/issue-list.md) for a complete run-down of the PRs/issues
+for go-cache and what was and wasn't included.
 
 FAQ
 ---
