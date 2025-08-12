@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"slices"
 	"sort"
 	"sync"
 	"testing"
@@ -236,9 +237,14 @@ func TestTouch(t *testing.T) {
 	if v != "b" {
 		t.Error("wrong value")
 	}
-	d := third.Sub(time.Now())
+	d := time.Until(third)
 	if d > 30*time.Second || d < 29*time.Second {
 		t.Error(d)
+	}
+
+	v, ok = c.TouchWithExpire("not set", 1*time.Second)
+	if ok || v != "" {
+		t.Errorf("%q, %v", v, ok)
 	}
 
 	t.Run("no expiry", func(t *testing.T) {
@@ -347,6 +353,16 @@ func TestGetWithExpire(t *testing.T) {
 	if expiration.UnixNano() < time.Now().UnixNano() {
 		t.Error("expiration for e is in the past")
 	}
+
+	t.Run("expired", func(t *testing.T) {
+		c := New[string, any](1*time.Nanosecond, 0)
+		c.Set("key", "hello")
+		time.Sleep(2 * time.Nanosecond)
+		v, exp, ok := c.GetWithExpire("key")
+		if v != nil || !exp.Equal(time.Time{}) || ok {
+			t.Errorf("%q, %s, %v", v, exp, ok)
+		}
+	})
 }
 
 func TestGetStale(t *testing.T) {
@@ -381,6 +397,11 @@ func TestGetStale(t *testing.T) {
 	}
 	if v.(string) != "y" {
 		t.Errorf("value wrong: %v", v)
+	}
+
+	v, exp, ok = c.GetStale("not set")
+	if ok || exp || v != nil {
+		t.Errorf("%q, %v, %v", v, exp, ok)
 	}
 }
 
@@ -465,6 +486,16 @@ func TestPop(t *testing.T) {
 	if fmt.Sprintf("%v", onEvict.items) != `[{foo val}]` {
 		t.Errorf("onEvicted: %v", onEvict.items)
 	}
+
+	t.Run("expired", func(t *testing.T) {
+		c := New[string, any](1*time.Nanosecond, 0)
+		c.Set("key", "hello")
+		time.Sleep(2 * time.Nanosecond)
+		v, ok := c.Pop("key")
+		if v != nil || ok {
+			t.Errorf("%q, %v", v, ok)
+		}
+	})
 }
 
 func TestModify(t *testing.T) {
@@ -629,14 +660,14 @@ func TestModifySetIncrement(t *testing.T) {
 }
 
 func TestItems(t *testing.T) {
-	c := New[string, any](NoExpiration, 1*time.Millisecond)
+	c := New[string, string](NoExpiration, 0)
 	c.Set("foo", "1")
 	c.Set("bar", "2")
 	c.Set("baz", "3")
-	c.SetWithExpire("exp", "4", 1)
-	time.Sleep(10 * time.Millisecond)
-	if n := c.ItemCount(); n != 3 {
-		t.Errorf("Item count is not 3 but %d", n)
+	c.SetWithExpire("exp", "4", 1*time.Nanosecond)
+	time.Sleep(2 * time.Nanosecond)
+	if n := c.ItemCount(); n != 4 {
+		t.Errorf("Item count is not 4 but %d", n)
 	}
 
 	keys := c.Keys()
@@ -645,13 +676,26 @@ func TestItems(t *testing.T) {
 		t.Errorf("%v", keys)
 	}
 
-	want := map[string]Item[any]{
+	want := map[string]Item[string]{
 		"foo": {Object: "1"},
 		"bar": {Object: "2"},
 		"baz": {Object: "3"},
 	}
-	if !reflect.DeepEqual(c.Items(), want) {
-		t.Errorf("%v", c.Items())
+	wantAny := map[any]Item[any]{
+		"foo": {Object: "1"},
+		"bar": {Object: "2"},
+		"baz": {Object: "3"},
+	}
+	if have := c.Items(); !reflect.DeepEqual(have, want) {
+		t.Errorf("\nhave: %#v\nwant: %#v", have, want)
+	}
+	if have := c.ItemsAny(); !reflect.DeepEqual(have, wantAny) {
+		t.Errorf("\nhave: %#v\nwant: %#v", have, want)
+	}
+
+	c.DeleteExpired()
+	if n := c.ItemCount(); n != 3 {
+		t.Errorf("Item count is not 3 but %d", n)
 	}
 }
 
@@ -824,5 +868,23 @@ func TestTouchOrAdd(t *testing.T) {
 	time.Sleep(time.Nanosecond)
 	if expiration.After(time.Now().Add(time.Second)) {
 		t.Errorf("TouchOrAddWithExpire did not set the expiration: expiration:%v", expiration)
+	}
+}
+
+func TestDeleteExpired(t *testing.T) {
+	c := New[string, string](10*time.Nanosecond, 0)
+	var evicted []string
+	c.OnEvicted(func(k, v string) { evicted = append(evicted, k, v) })
+
+	c.Set("one", "xxx")
+	c.SetWithExpire("two", "yyy", NoExpiration)
+	c.Set("three", "zzz")
+
+	time.Sleep(11 * time.Nanosecond)
+	c.DeleteExpired()
+
+	slices.Sort(evicted)
+	if fmt.Sprintf("%v", evicted) != "[one three xxx zzz]" {
+		t.Errorf("%v", evicted)
 	}
 }
