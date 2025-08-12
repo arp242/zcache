@@ -176,7 +176,9 @@ func (c *cache[K, V]) TouchWithExpire(k K, d time.Duration) (V, bool) {
 		return c.zero(), false
 	}
 
-	item.Expiration = time.Now().Add(d).UnixNano()
+	if d > 0 {
+		item.Expiration = time.Now().Add(d).UnixNano()
+	}
 	c.items[k] = item
 	return item.Object, true
 }
