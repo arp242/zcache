@@ -743,3 +743,47 @@ func TestRename(t *testing.T) {
 		t.Errorf(`Get("foo"): v=%v; ok=%v`, v, ok)
 	}
 }
+
+func TestGetOrAdd(t *testing.T) {
+	c := New[string, int](NoExpiration, 0)
+	v := c.GetOrAdd("a", 1)
+	if v != 1 {
+		t.Errorf("GetOrAdd did not return the added value: v=%v", v)
+	}
+	if v2 := c.GetOrAdd("a", 2); v2 != v {
+		t.Errorf("GetOrAdd did not return the existing value: v=%v; v2=%v", v, v2)
+	}
+	if _, exp, _ := c.GetWithExpire("a"); !exp.Equal(time.Time{}) {
+		t.Errorf("GetOrAdd did not add the default no expiration: exp=%v", exp)
+	}
+	if v2 := c.GetOrAddWithExpire("b", 2, time.Second); v2 != 2 {
+		t.Errorf("GetOrAddWithExpire did not return the added value: v2=%v", v2)
+	}
+	_, expiration, _ := c.GetWithExpire("b")
+	time.Sleep(time.Nanosecond)
+	if expiration.After(time.Now().Add(time.Second)) {
+		t.Errorf("GetOrAddWithExpire did not add the non-default expiration: expiration:%v", expiration)
+	}
+}
+
+func TestTouchOrAdd(t *testing.T) {
+	c := New[string, int](NoExpiration, 0)
+	v := c.TouchOrAdd("a", 1)
+	if v != 1 {
+		t.Errorf("TouchOrAdd did not return the added value: v=%v", v)
+	}
+	if v2 := c.TouchOrAdd("a", 2); v2 != v {
+		t.Errorf("TouchOrAdd did not return the existing value: v=%v; v2=%v", v, v2)
+	}
+	if _, exp, _ := c.GetWithExpire("a"); !exp.Equal(time.Time{}) {
+		t.Errorf("TouchOrAdd did not add the default no expiration: exp=%v", exp)
+	}
+	if v2 := c.TouchOrAddWithExpire("a", 2, time.Second); v2 != v {
+		t.Errorf("TouchOrAddWithExpire did not return the existing value: v=%v; v2=%v", v, v2)
+	}
+	_, expiration, _ := c.GetWithExpire("a")
+	time.Sleep(time.Nanosecond)
+	if expiration.After(time.Now().Add(time.Second)) {
+		t.Errorf("TouchOrAddWithExpire did not set the expiration: expiration:%v", expiration)
+	}
+}
