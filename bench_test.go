@@ -10,18 +10,18 @@ import (
 
 func benchmarkGet(b *testing.B, exp time.Duration) {
 	b.StopTimer()
-	tc := New[string, any](exp, 0)
-	tc.Set("foo", "bar")
+	c := New[string, any](exp, 0)
+	c.Set("foo", "bar")
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Get("foo")
+		c.Get("foo")
 	}
 }
 
 func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 	b.StopTimer()
-	tc := New[string, any](exp, 0)
-	tc.Set("foo", "bar")
+	c := New[string, any](exp, 0)
+	c.Set("foo", "bar")
 	wg := new(sync.WaitGroup)
 	workers := runtime.NumCPU()
 	each := b.N / workers
@@ -30,7 +30,7 @@ func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 	for i := 0; i < workers; i++ {
 		go func() {
 			for j := 0; j < each; j++ {
-				tc.Get("foo")
+				c.Get("foo")
 			}
 			wg.Done()
 		}()
@@ -40,10 +40,10 @@ func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 
 func benchmarkSet(b *testing.B, exp time.Duration) {
 	b.StopTimer()
-	tc := New[string, any](exp, 0)
+	c := New[string, any](exp, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar")
+		c.Set("foo", "bar")
 	}
 }
 
@@ -135,11 +135,11 @@ func BenchmarkRWMutexMapSet(b *testing.B) {
 
 func BenchmarkCacheSetDelete(b *testing.B) {
 	b.StopTimer()
-	tc := New[string, any](DefaultExpiration, 0)
+	c := New[string, any](DefaultExpiration, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar")
-		tc.Delete("foo")
+		c.Set("foo", "bar")
+		c.Delete("foo")
 	}
 }
 
@@ -160,13 +160,13 @@ func BenchmarkRWMutexMapSetDelete(b *testing.B) {
 
 func BenchmarkCacheSetDeleteSingleLock(b *testing.B) {
 	b.StopTimer()
-	tc := New[string, any](DefaultExpiration, 0)
+	c := New[string, any](DefaultExpiration, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.mu.Lock()
-		tc.set("foo", "bar", DefaultExpiration)
-		tc.delete("foo")
-		tc.mu.Unlock()
+		c.mu.Lock()
+		c.set("foo", "bar", DefaultExpiration)
+		c.delete("foo")
+		c.mu.Unlock()
 	}
 }
 
@@ -185,14 +185,14 @@ func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
 
 func BenchmarkDeleteExpiredLoop(b *testing.B) {
 	b.StopTimer()
-	tc := New[string, any](5*time.Minute, 0)
-	tc.mu.Lock()
+	c := New[string, any](5*time.Minute, 0)
+	c.mu.Lock()
 	for i := 0; i < 100000; i++ {
-		tc.set(strconv.Itoa(i), "bar", DefaultExpiration)
+		c.set(strconv.Itoa(i), "bar", DefaultExpiration)
 	}
-	tc.mu.Unlock()
+	c.mu.Unlock()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.DeleteExpired()
+		c.DeleteExpired()
 	}
 }
