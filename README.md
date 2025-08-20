@@ -165,6 +165,25 @@ All these changes are in both v1 and v2:
 - Add `Proxy` type, to access cache items under a different key.
 - Various small internal and documentation improvements.
 
+ChangeLog
+---------
+
+## v2.4.0 (2025-08-20)
+- Add `(Get|Touch)OrAdd(WithExpire)?`
+- Fix `ModifySet()` so the cache's default expiry is used when setting new keys
+
+## v2.3.0 (2025-08-11)
+- Add `ModifySet()`
+
+## v2.2.0 (2025-06-19)
+- Add `ItemsAny()`
+
+## v2.1.0 (2022-05-27)
+- Add `Rename()`
+
+## v2.0.0 (2022-03-28)
+- Initial v2 release.
+
 FAQ
 ---
 
