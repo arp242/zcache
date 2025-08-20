@@ -571,6 +571,16 @@ func TestModifySet(t *testing.T) {
 	if !ok {
 		t.Error("ok false")
 	}
+	v, exp, ok := c.GetWithExpire("k")
+	if fmt.Sprintf("%v", v) != `[x y]` {
+		t.Errorf("value wrong: %v", v)
+	}
+	if !ok {
+		t.Error("ok false")
+	}
+	if !exp.IsZero() {
+		t.Errorf("expiry set: %v", exp)
+	}
 
 	v, ok = c.ModifySet("doesntexist", func(v []string, ok bool) []string {
 		if ok {
@@ -621,21 +631,33 @@ func TestModifySet(t *testing.T) {
 		t.Errorf("v not nil: %v", v)
 	}
 
-	c = New[string, []string](1, 0)
-	c.Set("expired", []string{"x"})
-	time.Sleep(time.Nanosecond)
-	v, ok = c.ModifySet("expired", func(v []string, ok bool) []string {
-		if ok {
-			t.Error("ok is true")
+	t.Run("expired keys", func(t *testing.T) {
+		c := New[string, []string](1, 0)
+		c.Set("expired", []string{"x"})
+		time.Sleep(time.Nanosecond)
+		v, ok = c.ModifySet("expired", func(v []string, ok bool) []string {
+			if ok {
+				t.Error("ok is true")
+			}
+			return []string{"a", "b"}
+		})
+		if fmt.Sprintf("%v", v) != `[a b]` {
+			t.Errorf("value wrong: %v", v)
 		}
-		return []string{"a", "b"}
+		if ok {
+			t.Error("ok true")
+		}
 	})
-	if fmt.Sprintf("%v", v) != `[a b]` {
-		t.Errorf("value wrong: %v", v)
-	}
-	if ok {
-		t.Error("ok true")
-	}
+
+	t.Run("use cache default expiry", func(t *testing.T) {
+		c := New[string, string](1*time.Hour, 0)
+		c.ModifySet("new", func(string, bool) string { return "x" })
+
+		v, exp, ok := c.GetWithExpire("new")
+		if v != "x" || !ok || exp.IsZero() || exp.After(time.Now().Add(1*time.Hour)) || exp.Before(time.Now().Add(1*time.Hour-50*time.Millisecond)) {
+			t.Fatalf("%v, %v, %v", v, exp, ok)
+		}
+	})
 }
 
 func TestModifySetIncrement(t *testing.T) {

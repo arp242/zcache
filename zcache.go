@@ -369,11 +369,12 @@ func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 }
 
 // ModifySet modifies the value of a key. This is similar to [Modify], but also
-// sets keys that don't exist yet or are expired.
+// sets keys that don't exist yet or are expired (with the cache's default
+// expiry).
 //
-// v will be set to the zero value if the key isn't set yet; the boolean
-// argument indicates if the key exists. For example to increment only existing
-// keys:
+// In the callback v will be set to the zero value if the key isn't set yet; the
+// boolean argument indicates if the key exists. For example to increment only
+// existing keys:
 //
 //	newval, ok := cache.ModifySet("n", func(v int, exists bool) int {
 //	    if !exists {
@@ -397,6 +398,9 @@ func (c *cache[K, V]) ModifySet(k K, f func(V, bool) V) (V, bool) {
 	item.Object = f(item.Object, ok)
 	if ok {
 		c.delete(k)
+	}
+	if c.defaultExpiration > 0 {
+		item.Expiration = time.Now().Add(c.defaultExpiration).UnixNano()
 	}
 	c.items[k] = item
 	return item.Object, ok
