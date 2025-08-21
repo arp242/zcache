@@ -399,7 +399,7 @@ func (c *cache[K, V]) ModifySet(k K, f func(V, bool) V) (V, bool) {
 	if ok {
 		c.delete(k)
 	}
-	if c.defaultExpiration > 0 {
+	if !ok && c.defaultExpiration > 0 {
 		item.Expiration = time.Now().Add(c.defaultExpiration).UnixNano()
 	}
 	c.items[k] = item

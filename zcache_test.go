@@ -657,6 +657,17 @@ func TestModifySet(t *testing.T) {
 		if v != "x" || !ok || exp.IsZero() || exp.After(time.Now().Add(1*time.Hour)) || exp.Before(time.Now().Add(1*time.Hour-50*time.Millisecond)) {
 			t.Fatalf("%v, %v, %v", v, exp, ok)
 		}
+
+		// Don't extend expiry for existing keys
+		time.Sleep(1 * time.Millisecond)
+		c.ModifySet("new", func(string, bool) string { return "xx" })
+		v2, exp2, ok2 := c.GetWithExpire("new")
+		if v2 != "xx" || !ok2 {
+			t.Fatalf("%v, %v, %v", v, exp, ok)
+		}
+		if !exp.Equal(exp2) {
+			t.Fatalf("expiry modified\nprev: %v\nnew:  %v", exp, exp2)
+		}
 	})
 }
 

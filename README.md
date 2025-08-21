@@ -168,6 +168,9 @@ All these changes are in both v1 and v2:
 ChangeLog
 ---------
 
+## 2.4.1 (2025-08-21)
+- Don't extend expiry for existing keys in `ModifySet()`
+
 ## v2.4.0 (2025-08-20)
 - Add `(Get|Touch)OrAdd(WithExpire)?`
 - Fix `ModifySet()` so the cache's default expiry is used when setting new keys
