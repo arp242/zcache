@@ -691,6 +691,46 @@ func TestModifySet(t *testing.T) {
 			t.Fatalf("expiry modified\nprev: %v\nnew:  %v", exp, exp2)
 		}
 	})
+
+	t.Run("WithExpiry", func(t *testing.T) {
+		c := New[string, string](1*time.Hour, 0)
+		c.ModifySetWithExpire("new", func(v string, exp time.Time, ok bool) (string, time.Duration) {
+			if v != "" || !exp.IsZero() || ok {
+				t.Errorf("wrong values in callback: v=%v; exp=%v; ok=%v", v, exp, ok)
+			}
+			return "x", time.Nanosecond
+		})
+		time.Sleep(1 * time.Nanosecond)
+		v, exp, ok := c.GetWithExpire("new")
+		if ok {
+			t.Fatalf("not expired: %v, %v", v, exp)
+		}
+		c.ModifySetWithExpire("new", func(v string, exp time.Time, ok bool) (string, time.Duration) {
+			if v != "" || !exp.IsZero() || ok {
+				t.Errorf("wrong values in callback: v=%v; exp=%v; ok=%v", v, exp, ok)
+			}
+			return "x", time.Nanosecond
+		})
+
+		c = New[string, string](1*time.Nanosecond, 0)
+		c.ModifySetWithExpire("new", func(v string, exp time.Time, ok bool) (string, time.Duration) {
+			if v != "" || !exp.IsZero() || ok {
+				t.Errorf("wrong values in callback: v=%v; exp=%v; ok=%v", v, exp, ok)
+			}
+			return "x", time.Hour
+		})
+		time.Sleep(1 * time.Nanosecond)
+		v, ok = c.Get("new")
+		if !ok {
+			t.Fatalf("expired: %v", v)
+		}
+		c.ModifySetWithExpire("new", func(v string, exp time.Time, ok bool) (string, time.Duration) {
+			if v != "x" || exp.IsZero() || !ok {
+				t.Errorf("wrong values in callback: v=%v; exp=%v; ok=%v", v, exp, ok)
+			}
+			return "x", time.Hour
+		})
+	})
 }
 
 func TestModifySetIncrement(t *testing.T) {

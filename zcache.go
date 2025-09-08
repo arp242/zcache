@@ -389,20 +389,44 @@ func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 //	    return v + 1, true
 //	})
 func (c *cache[K, V]) ModifySet(k K, f func(V, bool) V) (V, bool) {
+	return c.ModifySetWithExpire(k, func(v V, t time.Time, ok bool) (V, time.Duration) { return f(v, ok), DefaultExpiration })
+}
+
+// ModifySetWithExpire modifies the value of a key. This is similar to
+// [ModifySet] in that it sets keys that don't exist yet, but allows returning
+// an explicit expiry instead of using the default.
+//
+// The key expiry is not modified if the key already exists: the returned expiry
+// is only used for new keys that are not yet set. The cache's default
+// expiration time is used if the returned expiry is 0 (DefaultExpiration), or
+// the item never expires if it's -1 (NoExpiration).
+//
+// In the callback v will be set to the zero value if the key isn't set yet; the
+// boolean argument indicates if the key exists. It also passes the expiry of
+// the key to the callback, which is the zero value for keys that don't yet exist.
+//
+// Like [Modify], it returns the new value and whether the key was set (past
+// tense: the key will always be set after calling ModifySetWithExpire).
+func (c *cache[K, V]) ModifySetWithExpire(k K, f func(V, time.Time, bool) (V, time.Duration)) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
+	var exp time.Duration
 	if !ok || (item.Expiration > 0 && time.Now().UnixNano() > item.Expiration) {
-		var zero V
 		ok = false
-		item.Object = f(zero, false)
+		item.Object, exp = f(c.zero(), time.Time{}, false)
 	} else {
-		item.Object = f(item.Object, true)
+		item.Object, exp = f(item.Object, time.Unix(0, item.Expiration), true)
 	}
-	if !ok && c.defaultExpiration > 0 {
-		item.Expiration = time.Now().Add(c.defaultExpiration).UnixNano()
+	if !ok {
+		if exp == DefaultExpiration {
+			exp = c.defaultExpiration
+		}
+		if exp > 0 {
+			item.Expiration = time.Now().Add(exp).UnixNano()
+		}
 	}
 	c.items[k] = item
 	return item.Object, ok
