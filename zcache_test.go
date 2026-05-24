@@ -639,9 +639,31 @@ func TestModifySet(t *testing.T) {
 			if ok {
 				t.Error("ok is true")
 			}
+			if v != nil {
+				t.Errorf("v is not nil: %#v", v)
+			}
 			return []string{"a", "b"}
 		})
 		if fmt.Sprintf("%v", v) != `[a b]` {
+			t.Errorf("value wrong: %v", v)
+		}
+		if ok {
+			t.Error("ok true")
+		}
+
+		time.Sleep(time.Nanosecond)
+		c.DeleteExpired()
+
+		v, ok = c.ModifySet("expired", func(v []string, ok bool) []string {
+			if ok {
+				t.Error("ok is true")
+			}
+			if v != nil {
+				t.Errorf("v is not nil: %#v", v)
+			}
+			return []string{"c", "d"}
+		})
+		if fmt.Sprintf("%v", v) != `[c d]` {
 			t.Errorf("value wrong: %v", v)
 		}
 		if ok {

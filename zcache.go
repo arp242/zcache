@@ -353,6 +353,8 @@ func (c *cache[K, V]) GetWithExpire(k K) (V, time.Time, bool) {
 // This is not run for keys that are not yet set; the boolean return indicates
 // if the key was set and if the function was run. See [ModifySet] for a variant
 // that will also set the key.
+//
+// The expiry of the key is not modified.
 func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -369,12 +371,16 @@ func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 }
 
 // ModifySet modifies the value of a key. This is similar to [Modify], but also
-// sets keys that don't exist yet or are expired (with the cache's default
-// expiry).
+// sets keys that don't exist yet (with the cache's default expiry). The expiry
+// for keys that already exist is not modified.
 //
-// In the callback v will be set to the zero value if the key isn't set yet; the
-// boolean argument indicates if the key exists. For example to increment only
-// existing keys:
+// In the callback v will be set to the zero value if the key isn't set or is
+// expired; the boolean argument indicates if the key exists.
+//
+// Like [Modify], it returns the new value and whether the key was set (past
+// tense: the key will always be set after calling ModifySet).
+//
+// For example to increment only existing keys:
 //
 //	newval, ok := cache.ModifySet("n", func(v int, exists bool) int {
 //	    if !exists {
@@ -382,9 +388,6 @@ func (c *cache[K, V]) Modify(k K, f func(V) V) (V, bool) {
 //	    }
 //	    return v + 1, true
 //	})
-//
-// Like [Modify], it returns the new value and whether the key was set (past
-// tense: the key will always be set after calling ModifySet).
 func (c *cache[K, V]) ModifySet(k K, f func(V, bool) V) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -392,12 +395,11 @@ func (c *cache[K, V]) ModifySet(k K, f func(V, bool) V) (V, bool) {
 	// "Inlining" of get and Expired
 	item, ok := c.items[k]
 	if !ok || (item.Expiration > 0 && time.Now().UnixNano() > item.Expiration) {
+		var zero V
 		ok = false
-	}
-
-	item.Object = f(item.Object, ok)
-	if ok {
-		c.delete(k)
+		item.Object = f(zero, false)
+	} else {
+		item.Object = f(item.Object, true)
 	}
 	if !ok && c.defaultExpiration > 0 {
 		item.Expiration = time.Now().Add(c.defaultExpiration).UnixNano()
