@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -967,5 +968,76 @@ func TestDeleteExpired(t *testing.T) {
 	slices.Sort(evicted)
 	if fmt.Sprintf("%v", evicted) != "[one three xxx zzz]" {
 		t.Errorf("%v", evicted)
+	}
+}
+
+func TestLimitHard(t *testing.T) {
+	for range 10 {
+		c := New[string, string](-1, time.Hour)
+		var onhard, onev atomic.Int32
+		c.LimitCountHard(3, func(k, v string, exp time.Time) { onhard.Add(1) })
+		c.OnEvicted(func(k, v string) { onev.Add(1) })
+
+		var wg sync.WaitGroup
+		wg.Add(5)
+		go func() { defer wg.Done(); c.Set("one", "a") }()
+		go func() { defer wg.Done(); c.Set("two", "b") }()
+		go func() { defer wg.Done(); c.Set("three", "c") }()
+		go func() { defer wg.Done(); c.Set("four", "d") }()
+		go func() { defer wg.Done(); c.Set("five", "e") }()
+		wg.Wait()
+		c.Set("six", "f")
+
+		if c.ItemCount() != 3 {
+			t.Error(c.ItemCount())
+		}
+		if k := c.Keys(); !slices.Contains(k, "six") {
+			t.Errorf("last key not present: %v", k)
+		}
+		if onhard.Load() != 3 {
+			t.Error(onhard.Load())
+		}
+		if onev.Load() != 3 {
+			t.Error(onev.Load())
+		}
+	}
+}
+
+func TestLimitSoft(t *testing.T) {
+	{
+		c := New[string, string](time.Nanosecond, -1)
+		c.LimitCountSoft(3, time.Hour, 0)
+
+		var wg sync.WaitGroup
+		wg.Add(5)
+		go func() { defer wg.Done(); c.Set("one", "a") }()
+		go func() { defer wg.Done(); c.Set("two", "b") }()
+		go func() { defer wg.Done(); c.Set("three", "c") }()
+		go func() { defer wg.Done(); c.Set("four", "d") }()
+		go func() { defer wg.Done(); c.Set("five", "e") }()
+		wg.Wait()
+		c.Set("six", "f")
+		time.Sleep(time.Nanosecond)
+		// No keys
+		// for _, k := range c.Keys() {
+		// 	fmt.Println(k)
+		// }
+	}
+
+	{
+		c := New[string, string](time.Hour, -1)
+		c.LimitCountSoft(3, time.Hour, time.Hour*2)
+
+		c.Set("one", "a")
+		c.Set("two", "b")
+		c.Set("three", "c")
+		c.Set("four", "d")
+		time.Sleep(time.Millisecond * 100) // Wait for delete to finish
+		c.Set("five", "e")
+		c.Set("six", "f")
+		// five and six, because atMost
+		// for _, k := range c.Keys() {
+		// 	fmt.Println(k)
+		// }
 	}
 }

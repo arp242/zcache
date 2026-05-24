@@ -40,6 +40,14 @@ type (
 		mu                sync.RWMutex
 		onEvicted         func(K, V)
 		janitor           *janitor[K, V]
+
+		softLimit  int
+		softLast   time.Time
+		softAtMost time.Duration
+		softEager  int64
+
+		hardLimit int
+		onHard    func(K, V, time.Time)
 	}
 
 	// Item stored in the cache; it holds the value and the expiration time as
@@ -152,6 +160,7 @@ func (c *cache[K, V]) SetWithExpire(k K, v V, d time.Duration) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.checklimit()
 	c.items[k] = Item[V]{
 		Object:     v,
 		Expiration: e,
@@ -467,15 +476,76 @@ func (c *cache[K, V]) Pop(k K) (V, bool) {
 	return item.Object, true
 }
 
+// LimitCountHard sets the hard limit on the number of cache items.
+//
+// It will delete a random key if the hard limit is reached; ideally this should
+// never or rarely be invoked, and is only intended to avoid inordinate memory
+// usage with a runaway cache. It will call the onHard callback (which may be
+// nil) with the evicted key and its expiry. This is called in addition to the
+// regular OnEvicted() callback.
+//
+// The limit can be set to <=0 to disable it, which is the default.
+func (c *cache[K, V]) LimitCountHard(limit int, onHard func(K, V, time.Time)) {
+	// TODO(v3): ideally c.OnEvicted() should accept func(k K, v V, forced bool),
+	// or something along those lines. But we can't change that now, so it has
+	// an additional callback here.
+	c.hardLimit, c.onHard = limit, onHard
+}
+
+// LimitCountSoft sets the soft limit on the number of cache items.
+//
+// This will call the janitor to delete all expired keys (if any) when the
+// number of items is greater than the soft limit. This will only happen once
+// every softAtMost. If softEager is >0, this time is subtracted from the expiry
+// time to more eagerly delete keys. This does not guarantee the cache size
+// remains within the soft limit.
+//
+// The limit can be set to <=0 to disable it, which is the default.
+//
+// For example, to create a cache that cleans expired items once a day, but runs
+// it once an hour (at most) once there are 10,000 items:
+//
+//	c := zcache.New[string, string](zcache.NoExpiration, time.Hour*24)
+//	c.LimitCountSoft(10_000, time.Hour, 0)
+func (c *cache[K, V]) LimitCountSoft(limit int, softAtMost, softEager time.Duration) {
+	c.softLimit = limit
+	c.softAtMost = softAtMost
+	c.softEager = softEager.Nanoseconds()
+}
+
+// Should be called *before* setting the key, so the key currently set doesn't
+// get randomly evicted.
+func (c *cache[K, V]) checklimit() {
+	if c.softLimit > 0 && len(c.items) >= c.softLimit && time.Since(c.softLast) > c.softAtMost {
+		c.softLast = time.Now()
+		go c.deleteExpired(c.softEager)
+	}
+
+	if c.hardLimit > 0 && len(c.items) >= c.hardLimit {
+		for k, v := range c.items {
+			c.delete(k)
+			if c.onEvicted != nil {
+				c.onEvicted(k, v.Object)
+			}
+			if c.onHard != nil {
+				c.onHard(k, v.Object, time.Unix(0, v.Expiration))
+			}
+			break
+		}
+	}
+}
+
 // DeleteExpired deletes all expired items from the cache.
-func (c *cache[K, V]) DeleteExpired() {
+func (c *cache[K, V]) DeleteExpired() { c.deleteExpired(0) }
+
+func (c *cache[K, V]) deleteExpired(eager int64) {
 	var evictedItems []keyAndValue[K, V]
 	now := time.Now().UnixNano()
 	c.mu.Lock()
 
 	for k, v := range c.items {
 		// "Inlining" of expired
-		if v.Expiration > 0 && now > v.Expiration {
+		if v.Expiration > 0 && now+eager > v.Expiration {
 			ov, evicted := c.delete(k)
 			if evicted {
 				evictedItems = append(evictedItems, keyAndValue[K, V]{k, ov})
@@ -638,6 +708,7 @@ func (c *cache[K, V]) set(k K, v V, d time.Duration) Item[V] {
 		Object:     v,
 		Expiration: e,
 	}
+	c.checklimit()
 	c.items[k] = item
 	return item
 }
