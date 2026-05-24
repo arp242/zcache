@@ -417,6 +417,19 @@ func TestAdd(t *testing.T) {
 	}
 }
 
+func TestAddWithExpire(t *testing.T) {
+	c := New[string, any](NoExpiration, 0)
+	err := c.AddWithExpire("foo", "bar", time.Nanosecond)
+	if err != nil {
+		t.Error("Couldn't add foo even though it shouldn't exist")
+	}
+	time.Sleep(time.Nanosecond)
+	v, ok := c.Get("foo")
+	if ok || v != nil {
+		t.Errorf("v=%v; ok=%v", v, ok)
+	}
+}
+
 func TestReplace(t *testing.T) {
 	c := New[string, string](NoExpiration, 0)
 	err := c.Replace("foo", "bar")
@@ -427,6 +440,19 @@ func TestReplace(t *testing.T) {
 	err = c.Replace("foo", "bar")
 	if err != nil {
 		t.Error("Couldn't replace existing key foo")
+	}
+}
+
+func TestReplaceWithExpire(t *testing.T) {
+	c := New[string, string](NoExpiration, 0)
+	err := c.ReplaceWithExpire("foo", "bar", time.Nanosecond)
+	if err == nil {
+		t.Error("Replaced foo when it shouldn't exist")
+	}
+	time.Sleep(time.Nanosecond)
+	v, ok := c.Get("foo")
+	if ok || v != "" {
+		t.Errorf("v=%v; ok=%v", v, ok)
 	}
 }
 
