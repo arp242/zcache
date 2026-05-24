@@ -442,18 +442,18 @@ type onEvictTest struct {
 	sync.Mutex
 	items []struct {
 		k string
-		v interface{}
+		v any
 	}
 }
 
-func (o *onEvictTest) add(k string, v interface{}) {
+func (o *onEvictTest) add(k string, v any) {
 	if k == "race" {
 		return
 	}
 	o.Lock()
 	o.items = append(o.items, struct {
 		k string
-		v interface{}
+		v any
 	}{k, v})
 	o.Unlock()
 }
@@ -760,7 +760,7 @@ func TestDeleteAll(t *testing.T) {
 		t.Fatal("c.onEvicted is not nil")
 	}
 	works := false
-	c.OnEvicted(func(k string, v interface{}) {
+	c.OnEvicted(func(k string, v any) {
 		if k == "foo" && v.(int) == 3 {
 			works = true
 		}
@@ -777,7 +777,7 @@ func TestDeleteFunc(t *testing.T) {
 	c.Set("bar", 4)
 
 	works := false
-	c.OnEvicted(func(k string, v interface{}) {
+	c.OnEvicted(func(k string, v any) {
 		if k == "foo" && v.(int) == 3 {
 			works = true
 		}

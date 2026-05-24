@@ -27,9 +27,9 @@ func benchmarkGetConcurrent(b *testing.B, exp time.Duration) {
 	each := b.N / workers
 	wg.Add(workers)
 	b.StartTimer()
-	for i := 0; i < workers; i++ {
+	for range workers {
 		go func() {
-			for j := 0; j < each; j++ {
+			for range each {
 				c.Get("foo")
 			}
 			wg.Done()
@@ -71,7 +71,7 @@ func BenchmarkRWMutexMapGet(b *testing.B) {
 func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 	b.StopTimer()
 	s := struct{ name string }{name: "foo"}
-	m := map[interface{}]string{
+	m := map[any]string{
 		s: "bar",
 	}
 	mu := sync.RWMutex{}
@@ -85,7 +85,7 @@ func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 
 func BenchmarkRWMutexInterfaceMapGetString(b *testing.B) {
 	b.StopTimer()
-	m := map[interface{}]string{
+	m := map[any]string{
 		"foo": "bar",
 	}
 	mu := sync.RWMutex{}
@@ -108,9 +108,9 @@ func BenchmarkRWMutexMapGetConcurrent(b *testing.B) {
 	each := b.N / workers
 	wg.Add(workers)
 	b.StartTimer()
-	for i := 0; i < workers; i++ {
+	for range workers {
 		go func() {
-			for j := 0; j < each; j++ {
+			for range each {
 				mu.RLock()
 				_ = m["foo"]
 				mu.RUnlock()
@@ -187,7 +187,7 @@ func BenchmarkDeleteExpiredLoop(b *testing.B) {
 	b.StopTimer()
 	c := New[string, any](5*time.Minute, 0)
 	c.mu.Lock()
-	for i := 0; i < 100000; i++ {
+	for i := range 100000 {
 		c.set(strconv.Itoa(i), "bar", DefaultExpiration)
 	}
 	c.mu.Unlock()

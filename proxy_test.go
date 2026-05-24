@@ -18,7 +18,7 @@ func TestProxy(t *testing.T) {
 			t.Errorf("value wrong: %q", v)
 		}
 	}
-	not := func(v interface{}, ok bool) {
+	not := func(v any, ok bool) {
 		t.Helper()
 		if ok {
 			t.Error("ok true")

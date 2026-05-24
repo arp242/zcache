@@ -1,6 +1,7 @@
 package zcache
 
 import (
+	"maps"
 	"sync"
 )
 
@@ -91,10 +92,5 @@ func (p *Proxy[ProxyK, MainK, V]) Get(proxyKey ProxyK) (V, bool) {
 func (p *Proxy[ProxyK, MainK, V]) Items() map[ProxyK]MainK {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-
-	m := make(map[ProxyK]MainK, len(p.m))
-	for k, v := range p.m {
-		m[k] = v
-	}
-	return m
+	return maps.Clone(p.m)
 }
