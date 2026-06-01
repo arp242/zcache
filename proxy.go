@@ -89,8 +89,33 @@ func (p *Proxy[ProxyK, MainK, V]) Get(proxyKey ProxyK) (V, bool) {
 }
 
 // Items gets all items in this proxy, as proxyKey → mainKey
+//
+// Note this does not check if the proxy destination is expired.
 func (p *Proxy[ProxyK, MainK, V]) Items() map[ProxyK]MainK {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return maps.Clone(p.m)
+}
+
+// ItemsAny returns all items, like [Items], but untyped.
+//
+// This can be useful in some cases where you want to iterate over multiple
+// caches, for example for debugging, so you can assign them to a generic
+// interface:
+//
+//	interface {
+//	   ItemsAny() map[any]zcache.Item[any]
+//	}
+//
+// Note this does not check if the proxy destination is expired; the
+// Item.Expiration is always 0.
+func (c *Proxy[ProxyK, MainK, V]) ItemsAny() map[any]Item[any] {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	m := make(map[any]Item[any], len(c.m))
+	for k, v := range c.m {
+		m[k] = Item[any]{Object: v}
+	}
+	return m
 }

@@ -42,8 +42,11 @@ func TestProxy(t *testing.T) {
 	has(pc.Get("proxy"))
 	not(pc.Get("main"))
 
-	if !reflect.DeepEqual(pc.Items(), map[string]string{"proxy": "main"}) {
-		t.Error()
+	if have := pc.Items(); !reflect.DeepEqual(have, map[string]string{"proxy": "main"}) {
+		t.Error(have)
+	}
+	if have := pc.ItemsAny(); !reflect.DeepEqual(have, map[any]Item[any]{"proxy": Item[any]{Object: "main"}}) {
+		t.Errorf("%#v\n", have)
 	}
 
 	if k, ok := pc.Key("adsasdasd"); k != "" || ok != false {
